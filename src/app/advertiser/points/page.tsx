@@ -108,13 +108,16 @@ export default function AdvertiserPointsPage() {
                 <button
                   key={amt}
                   onClick={() => setChargeAmount(amt.toString())}
-                  className={`py-2 rounded-lg text-sm font-medium border transition-colors cursor-pointer ${
+                  className={`py-2.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer ${
                     chargeAmount === amt.toString()
                       ? "bg-blue-500 text-white border-blue-500"
                       : "bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300"
                   }`}
                 >
-                  {amt.toLocaleString()}원
+                  <span>{amt.toLocaleString()}P</span>
+                  <span className={`block text-[10px] mt-0.5 ${chargeAmount === amt.toString() ? "text-blue-200" : "text-gray-400"}`}>
+                    (VAT포함 {Math.round(amt * 1.1).toLocaleString()}원)
+                  </span>
                 </button>
               ))}
             </div>
@@ -153,11 +156,31 @@ export default function AdvertiserPointsPage() {
             </div>
           </div>
 
+          {/* VAT 포함 결제 금액 안내 */}
+          {chargeAmount && parseInt(chargeAmount) >= 10000 && (
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-500">충전 포인트</span>
+                <span className="text-gray-900">{parseInt(chargeAmount).toLocaleString()}P</span>
+              </div>
+              <div className="flex items-center justify-between text-sm mb-1">
+                <span className="text-gray-500">VAT (10%)</span>
+                <span className="text-gray-900">{Math.round(parseInt(chargeAmount) * 0.1).toLocaleString()}원</span>
+              </div>
+              <div className="border-t my-2" />
+              <div className="flex items-center justify-between text-sm font-bold">
+                <span className="text-gray-700">총 결제 금액</span>
+                <span className="text-blue-600 text-base">{Math.round(parseInt(chargeAmount) * 1.1).toLocaleString()}원</span>
+              </div>
+            </div>
+          )}
+
           {chargeMethod === "BANK_TRANSFER" && (
             <div className="bg-blue-50 rounded-lg p-4 mb-4 text-sm text-blue-800">
               <p className="font-semibold mb-1">입금 계좌 안내</p>
               <p>하나은행 010-668699-38807 (다즐피플)</p>
-              <p className="text-xs mt-1 text-blue-600">* 입금자명을 회원명과 동일하게 입력해주세요.</p>
+              <p className="text-xs mt-1 text-blue-600">* VAT 포함 금액을 입금해주세요.</p>
+              <p className="text-xs text-blue-600">* 입금자명을 회원명과 동일하게 입력해주세요.</p>
               <p className="text-xs text-blue-600">* 입금 후 관리자 확인까지 영업일 기준 1~2일 소요됩니다.</p>
             </div>
           )}
@@ -168,7 +191,7 @@ export default function AdvertiserPointsPage() {
               disabled={submitting || !chargeAmount}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer"
             >
-              {submitting ? "처리중..." : `${parseInt(chargeAmount || "0").toLocaleString()}원 충전 신청`}
+              {submitting ? "처리중..." : chargeAmount && parseInt(chargeAmount) >= 10000 ? `${Math.round(parseInt(chargeAmount) * 1.1).toLocaleString()}원 충전 신청 (VAT 포함)` : "충전 신청"}
             </button>
             <button
               onClick={() => setShowChargeForm(false)}
