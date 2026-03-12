@@ -76,6 +76,117 @@ const APP_STATUS_MAP: Record<string, { label: string; className: string }> = {
 
 const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
 
+/* ===== 채널별 미션 아이콘 정의 ===== */
+const MISSION_ICONS: Record<string, { label: string; icon: string }[]> = {
+  BLOG_REVIEW: [
+    { label: "키워드", icon: "keyword" },
+    { label: "15장 이상", icon: "photo" },
+    { label: "1,000자", icon: "text" },
+    { label: "지도 첨부", icon: "map" },
+    { label: "동영상 or GIF", icon: "video" },
+    { label: "공정위 표기", icon: "ad" },
+  ],
+  BLOG_CLIP: [], // 특수 처리 (블로그 + 클립 두 섹션)
+  CLIP: [
+    { label: "해시태그", icon: "hashtag" },
+    { label: "지도 첨부", icon: "map" },
+    { label: "15초 이상", icon: "duration" },
+    { label: "#협찬 #리뷰노트", icon: "sponsored" },
+  ],
+  INSTAGRAM_POST: [
+    { label: "해시태그", icon: "hashtag" },
+    { label: "사진 3장 이상", icon: "photo" },
+    { label: "지도 첨부", icon: "map" },
+    { label: "#협찬 표기", icon: "sponsored" },
+  ],
+  INSTAGRAM_REEL: [
+    { label: "해시태그", icon: "hashtag" },
+    { label: "지도 첨부", icon: "map" },
+    { label: "30초 이상", icon: "duration" },
+    { label: "#협찬 #리뷰노트", icon: "sponsored" },
+    { label: "목소리 필수", icon: "voice" },
+  ],
+  YOUTUBE: [
+    { label: "키워드", icon: "keyword" },
+    { label: "태그", icon: "hashtag" },
+    { label: "3분 이상", icon: "duration" },
+    { label: "유료광고 표시", icon: "ad" },
+    { label: "목소리 필수", icon: "voice" },
+  ],
+  YOUTUBE_SHORTS: [
+    { label: "키워드", icon: "keyword" },
+    { label: "지도 첨부", icon: "map" },
+    { label: "30초 이상", icon: "duration" },
+    { label: "유료광고 표시", icon: "ad" },
+    { label: "목소리 필수", icon: "voice" },
+  ],
+  TIKTOK: [
+    { label: "키워드", icon: "keyword" },
+    { label: "지도 첨부", icon: "map" },
+    { label: "30초 이상", icon: "duration" },
+    { label: "유료광고 표시", icon: "ad" },
+    { label: "목소리 필수", icon: "voice" },
+  ],
+};
+
+const BLOG_CLIP_BLOG = [
+  { label: "키워드", icon: "keyword" },
+  { label: "15장 이상", icon: "photo" },
+  { label: "1,000자", icon: "text" },
+  { label: "지도 첨부", icon: "map" },
+  { label: "동영상 or GIF", icon: "video" },
+  { label: "공정위 표기", icon: "ad" },
+];
+const BLOG_CLIP_CLIP = [
+  { label: "해시태그", icon: "hashtag" },
+  { label: "지도 첨부", icon: "map" },
+  { label: "15초 이상", icon: "duration" },
+  { label: "#협찬 #리뷰노트", icon: "sponsored" },
+];
+
+function MissionIcon({ icon }: { icon: string }) {
+  const svgClass = "w-6 h-6 text-gray-600";
+  switch (icon) {
+    case "keyword":
+      return <svg className={svgClass} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 7v4m-2-2h4" /></svg>;
+    case "photo":
+      return <svg className={svgClass} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
+    case "text":
+      return <svg className={svgClass} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h7" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 16l-4 4m0-4l4 4" /></svg>;
+    case "map":
+      return <svg className={svgClass} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
+    case "video":
+      return <svg className={svgClass} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>;
+    case "duration":
+      return <svg className={svgClass} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>;
+    case "hashtag":
+      return <svg className={svgClass} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>;
+    case "ad":
+      return <svg className={svgClass} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>;
+    case "voice":
+      return <svg className={svgClass} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>;
+    case "sponsored":
+      return <svg className={svgClass} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>;
+    default:
+      return null;
+  }
+}
+
+function MissionIconRow({ items }: { items: { label: string; icon: string }[] }) {
+  return (
+    <div className="flex items-start justify-center gap-5 py-4">
+      {items.map((item, i) => (
+        <div key={i} className="flex flex-col items-center gap-1.5 w-16">
+          <div className="w-11 h-11 flex items-center justify-center">
+            <MissionIcon icon={item.icon} />
+          </div>
+          <span className="text-[11px] text-gray-600 text-center leading-tight">{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ===== 미니 달력 ===== */
 function MiniCalendar({ startDate, endDate }: { startDate: string; endDate: string }) {
   const start = new Date(startDate);
@@ -383,38 +494,34 @@ export default function CampaignDetailClient({
           {/* 체험단 미션 */}
           {campaign.missionText && (
             <div className="py-3 border-b">
-              <span className="text-sm text-gray-400 block mb-3">체험단 미션</span>
-              <div className="flex flex-wrap gap-4 mb-3">
-                {campaign.contentType.includes("BLOG") && (
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                    </div>
-                    <span className="text-[10px] text-gray-500">해시태그</span>
-                  </div>
-                )}
-                <div className="flex flex-col items-center gap-1">
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  </div>
-                  <span className="text-[10px] text-gray-500">사진 필수</span>
-                </div>
-                {(campaign.contentType.includes("REEL") || campaign.contentType.includes("SHORT") || campaign.contentType === "TIKTOK" || campaign.contentType === "CLIP" || campaign.contentType === "YOUTUBE") && (
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    </div>
-                    <span className="text-[10px] text-gray-500">영상 촬영</span>
-                  </div>
-                )}
-                <div className="flex flex-col items-center gap-1">
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  </div>
-                  <span className="text-[10px] text-gray-500">목소리 필수</span>
-                </div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-semibold text-gray-900">체험단 미션</span>
+                <span className="text-sm text-gray-500">{contentLabel}</span>
               </div>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{campaign.missionText}</p>
+
+              {/* 채널별 미션 아이콘 */}
+              {campaign.contentType === "BLOG_CLIP" ? (
+                <>
+                  <div className="border-b">
+                    <p className="text-xs text-center text-gray-400 pt-2">블로그</p>
+                    <MissionIconRow items={BLOG_CLIP_BLOG} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-center text-gray-400 pt-2">클립</p>
+                    <MissionIconRow items={BLOG_CLIP_CLIP} />
+                  </div>
+                </>
+              ) : (
+                <MissionIconRow items={MISSION_ICONS[campaign.contentType] || MISSION_ICONS.BLOG_REVIEW} />
+              )}
+
+              {/* 사장님 요청 미션 */}
+              {campaign.missionText && (
+                <div className="bg-gray-50 rounded-lg p-4 mt-2">
+                  <p className="text-xs font-semibold text-gray-500 mb-2">사장님 요청 미션</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{campaign.missionText}</p>
+                </div>
+              )}
             </div>
           )}
 
