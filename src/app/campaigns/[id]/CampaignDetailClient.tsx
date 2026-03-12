@@ -294,21 +294,24 @@ export default function CampaignDetailClient({
           {/* 방문 정보 (방문형/포장형) */}
           {campaign.businessAddress && (
             <div className="py-3 border-b">
-              <span className="text-sm text-gray-400 block mb-2">방문 정보</span>
-              {/* 지도 (네이버 지도 임베드) */}
-              <div className="rounded-xl overflow-hidden border mb-3 bg-gray-100" style={{ height: 200 }}>
+              <span className="text-sm font-semibold text-gray-900 block mb-3">방문 정보</span>
+              {/* 지도 (네이버 지도 임베드 - 넓고 깔끔하게) */}
+              <div className="rounded-xl overflow-hidden border mb-3 bg-gray-100 relative" style={{ height: 280 }}>
                 <iframe
-                  src={`https://map.naver.com/p/search/${encodeURIComponent(campaign.businessAddress)}?type=SITE`}
-                  className="w-full h-full border-0"
+                  src={`https://map.naver.com/p/search/${encodeURIComponent(campaign.businessAddress)}`}
+                  className="w-full border-0"
+                  style={{ height: 380, marginTop: -50 }}
                   loading="lazy"
                   title="지도"
+                  allow="geolocation"
                 />
               </div>
-              <div className="flex items-start gap-2">
-                <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              {/* 주소 표시 */}
+              <div className="bg-gray-50 rounded-lg p-3 flex items-start gap-2.5">
+                <svg className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 <div>
-                  <p className="text-sm text-gray-900">{campaign.businessAddress}</p>
-                  {campaign.addressDetail && <p className="text-xs text-gray-500">{campaign.addressDetail}</p>}
+                  <p className="text-sm font-medium text-gray-900">{campaign.businessAddress}</p>
+                  {campaign.addressDetail && <p className="text-xs text-gray-500 mt-0.5">{campaign.addressDetail}</p>}
                 </div>
               </div>
             </div>
