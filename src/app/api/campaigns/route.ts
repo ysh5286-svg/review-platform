@@ -94,23 +94,38 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 페이지네이션
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const skip = (page - 1) * limit;
+
     // 정렬
     let orderBy: Record<string, string> = { createdAt: "desc" };
     if (sort === "deadline") orderBy = { endDate: "asc" };
     if (sort === "popular") orderBy = { maxReviewers: "desc" };
 
-    const campaigns = await prisma.campaign.findMany({
-      where,
-      include: {
-        advertiser: {
-          select: { id: true, name: true, image: true, businessName: true },
+    const [campaigns, total] = await Promise.all([
+      prisma.campaign.findMany({
+        where,
+        include: {
+          advertiser: {
+            select: { id: true, name: true, image: true, businessName: true },
+          },
+          _count: { select: { applications: true } },
         },
-        _count: { select: { applications: true } },
-      },
-      orderBy,
-    });
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.campaign.count({ where }),
+    ]);
 
-    return NextResponse.json(campaigns);
+    return NextResponse.json({
+      campaigns,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     console.error("Failed to fetch campaigns:", error);
     return NextResponse.json(

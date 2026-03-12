@@ -102,6 +102,9 @@ function CampaignsContent() {
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // 필터 상태
   const [search, setSearch] = useState(searchParams.get("search") || "");
@@ -111,7 +114,7 @@ function CampaignsContent() {
   const [campaignType, setCampaignType] = useState(searchParams.get("type") || "");
   const [sort, setSort] = useState(searchParams.get("sort") || "latest");
 
-  const fetchCampaigns = useCallback(async () => {
+  const fetchCampaigns = useCallback(async (pageNum = 1) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -121,11 +124,16 @@ function CampaignsContent() {
       if (campaignType) params.set("type", campaignType);
       if (sort) params.set("sort", sort);
       if (selectedRegions.length > 0) params.set("regions", selectedRegions.join(","));
+      params.set("page", String(pageNum));
+      params.set("limit", "20");
 
       const res = await fetch(`/api/campaigns?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setCampaigns(Array.isArray(data) ? data : []);
+        setCampaigns(Array.isArray(data.campaigns) ? data.campaigns : Array.isArray(data) ? data : []);
+        setTotal(data.total || 0);
+        setTotalPages(data.totalPages || 1);
+        setPage(pageNum);
       }
     } catch {
       /* noop */
@@ -232,7 +240,7 @@ function CampaignsContent() {
       {/* 결과 수 */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-500">
-          총 <span className="font-bold text-gray-900">{campaigns.length}</span>개 캠페인
+          총 <span className="font-bold text-gray-900">{total}</span>개 캠페인
         </p>
         {(selectedRegions.length > 0 || category || channel || campaignType) && (
           <button
@@ -348,6 +356,44 @@ function CampaignsContent() {
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {/* 페이지네이션 */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-8">
+          <button
+            onClick={() => fetchCampaigns(page - 1)}
+            disabled={page <= 1}
+            className="px-3 py-2 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-50 cursor-pointer disabled:cursor-default"
+          >
+            ← 이전
+          </button>
+          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+            const start = Math.max(1, Math.min(page - 2, totalPages - 4));
+            const p = start + i;
+            if (p > totalPages) return null;
+            return (
+              <button
+                key={p}
+                onClick={() => fetchCampaigns(p)}
+                className={`w-9 h-9 text-sm rounded-lg cursor-pointer ${
+                  p === page
+                    ? "bg-red-500 text-white font-bold"
+                    : "border hover:bg-gray-50 text-gray-600"
+                }`}
+              >
+                {p}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => fetchCampaigns(page + 1)}
+            disabled={page >= totalPages}
+            className="px-3 py-2 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-50 cursor-pointer disabled:cursor-default"
+          >
+            다음 →
+          </button>
         </div>
       )}
     </div>
