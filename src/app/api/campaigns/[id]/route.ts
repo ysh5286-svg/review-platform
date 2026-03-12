@@ -59,7 +59,8 @@ export async function PATCH(
       );
     }
 
-    if (campaign.advertiserId !== session.user.id) {
+    // 관리자 또는 본인만 수정 가능
+    if (campaign.advertiserId !== session.user.id && session.user.role !== "ADMIN") {
       return NextResponse.json(
         { error: "본인의 캠페인만 수정할 수 있습니다." },
         { status: 403 }
@@ -116,6 +117,59 @@ export async function PATCH(
     console.error("Failed to update campaign:", error);
     return NextResponse.json(
       { error: "캠페인 수정에 실패했습니다." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    const campaign = await prisma.campaign.findUnique({
+      where: { id },
+      include: { _count: { select: { applications: true } } },
+    });
+
+    if (!campaign) {
+      return NextResponse.json(
+        { error: "캠페인을 찾을 수 없습니다." },
+        { status: 404 }
+      );
+    }
+
+    // 관리자 또는 본인만 삭제 가능
+    if (campaign.advertiserId !== session.user.id && session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "본인의 캠페인만 삭제할 수 있습니다." },
+        { status: 403 }
+      );
+    }
+
+    // 관련 데이터 삭제 (리뷰 → 신청 → 캠페인 순서)
+    await prisma.review.deleteMany({
+      where: { application: { campaignId: id } },
+    });
+    await prisma.application.deleteMany({
+      where: { campaignId: id },
+    });
+    await prisma.campaign.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete campaign:", error);
+    return NextResponse.json(
+      { error: "캠페인 삭제에 실패했습니다." },
       { status: 500 }
     );
   }
