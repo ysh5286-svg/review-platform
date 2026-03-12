@@ -14,6 +14,7 @@ export async function GET() {
       campaign: {
         select: {
           id: true,
+          campaignNumber: true,
           title: true,
           platform: true,
           contentType: true,

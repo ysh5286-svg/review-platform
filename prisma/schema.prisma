@@ -137,8 +137,9 @@ enum CampaignStatus {
 }
 
 model Campaign {
-  id          String         @id @default(cuid())
-  title       String
+  id             String         @id @default(cuid())
+  campaignNumber Int            @unique @default(autoincrement())
+  title          String
   description String
   category    String
   platform    Platform

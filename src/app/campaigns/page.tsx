@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 
 interface Campaign {
   id: string;
+  campaignNumber: number;
   title: string;
   description: string;
   category: string;
@@ -319,8 +320,10 @@ function CampaignsContent() {
 
                 {/* 정보 */}
                 <div className="p-3">
-                  {/* 플랫폼 + 유형 */}
+                  {/* 번호 + 플랫폼 + 유형 */}
                   <div className="flex items-center gap-1 mb-1.5 text-[10px] text-gray-500">
+                    <span className="font-bold text-gray-400">#{campaign.campaignNumber}</span>
+                    <span className="text-gray-300">|</span>
                     <span>{PLATFORM_ICONS[campaign.platform] || "📋"}</span>
                     <span>{CONTENT_LABELS[campaign.contentType] || campaign.contentType}</span>
                     <span className="text-gray-300">|</span>

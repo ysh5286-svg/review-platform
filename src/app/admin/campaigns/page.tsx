@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 interface Campaign {
   id: string;
+  campaignNumber: number;
   title: string;
   description: string;
   platform: string;
@@ -150,7 +151,9 @@ export default function AdminCampaignsPage() {
   const filteredCampaigns = campaigns.filter((c) => {
     if (statusFilter && c.status !== statusFilter) return false;
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+      const term = searchTerm.toLowerCase().replace(/^#/, "");
+      const numTerm = parseInt(term);
+      if (!isNaN(numTerm) && term === String(numTerm) && c.campaignNumber === numTerm) return true;
       return (
         c.title.toLowerCase().includes(term) ||
         c.businessName.toLowerCase().includes(term) ||
@@ -169,7 +172,7 @@ export default function AdminCampaignsPage() {
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <input
           type="text"
-          placeholder="캠페인명, 업체명, 광고주 검색..."
+          placeholder="#번호, 캠페인명, 업체명, 광고주 검색..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 w-64"
@@ -379,6 +382,7 @@ export default function AdminCampaignsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
                     <tr>
+                      <th className="text-center px-3 py-3 font-medium text-gray-500 w-16">번호</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-500">캠페인명</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-500">광고주</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-500">플랫폼</th>
@@ -392,6 +396,9 @@ export default function AdminCampaignsPage() {
                   <tbody className="divide-y">
                     {filteredCampaigns.map((c) => (
                       <tr key={c.id} className="hover:bg-gray-50">
+                        <td className="px-3 py-3 text-center">
+                          <span className="text-xs font-bold text-gray-500">#{c.campaignNumber}</span>
+                        </td>
                         <td className="px-4 py-3">
                           <Link
                             href={`/campaigns/${c.id}`}

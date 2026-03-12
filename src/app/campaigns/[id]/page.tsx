@@ -93,6 +93,7 @@ export default async function CampaignDetailPage({
         <div className="p-6 sm:p-8">
           {/* Header */}
           <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="text-sm font-bold text-gray-400">#{campaign.campaignNumber}</span>
             <PlatformBadge platform={campaign.platform} />
             <StatusBadge status={campaign.status} />
             <span className="text-sm text-gray-400">

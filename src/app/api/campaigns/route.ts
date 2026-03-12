@@ -73,11 +73,17 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      const searchFilter = [
+      // #번호 검색 지원
+      const numSearch = search.replace(/^#/, "");
+      const searchNum = parseInt(numSearch);
+      const searchFilter: Record<string, unknown>[] = [
         { title: { contains: search } },
         { description: { contains: search } },
         { businessName: { contains: search } },
       ];
+      if (!isNaN(searchNum) && numSearch === String(searchNum)) {
+        searchFilter.push({ campaignNumber: searchNum });
+      }
       if (where.AND) {
         (where.AND as unknown[]).push({ OR: searchFilter });
       } else if (where.OR && !campaignType) {

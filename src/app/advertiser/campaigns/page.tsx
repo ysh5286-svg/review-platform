@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 interface Campaign {
   id: string;
+  campaignNumber: number;
   title: string;
   platform: string;
   status: string;
@@ -71,6 +72,7 @@ export default function AdvertiserCampaignsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
+                <th className="text-center px-3 py-3 font-medium text-gray-500 w-16">번호</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">캠페인명</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">플랫폼</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-500">상태</th>
@@ -82,6 +84,9 @@ export default function AdvertiserCampaignsPage() {
             <tbody className="divide-y">
               {campaigns.map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50">
+                  <td className="px-3 py-3 text-center">
+                    <span className="text-xs font-bold text-gray-500">#{c.campaignNumber}</span>
+                  </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/advertiser/campaigns/${c.id}`}
