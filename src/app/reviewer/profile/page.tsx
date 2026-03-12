@@ -504,11 +504,12 @@ export default function ReviewerProfilePage() {
               }
               label="인스타그램"
               value={snsForm.instagramId}
-              placeholder="@없이 아이디만"
+              placeholder="@없이 아이디만 입력"
               verified={profile.instagramVerified}
               editing={editingSns}
               onChange={(v) => setSnsForm({ ...snsForm, instagramId: v })}
               color="bg-pink-50 border-pink-200"
+              linkPrefix="https://www.instagram.com/"
             />
 
             {/* 유튜브 */}
@@ -542,11 +543,12 @@ export default function ReviewerProfilePage() {
               }
               label="틱톡"
               value={snsForm.tiktokId}
-              placeholder="틱톡 아이디"
+              placeholder="@없이 아이디만 입력"
               verified={profile.tiktokVerified}
               editing={editingSns}
               onChange={(v) => setSnsForm({ ...snsForm, tiktokId: v })}
               color="bg-gray-50 border-gray-200"
+              linkPrefix="https://www.tiktok.com/@"
             />
           </div>
 
@@ -714,6 +716,7 @@ function SnsCard({
   editing,
   onChange,
   color,
+  linkPrefix,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -723,7 +726,16 @@ function SnsCard({
   editing: boolean;
   onChange: (v: string) => void;
   color: string;
+  linkPrefix?: string;
 }) {
+  // @가 있으면 자동으로 제거
+  const handleChange = (v: string) => {
+    onChange(v.replace(/^@/, ""));
+  };
+
+  // 링크 URL 생성
+  const linkUrl = linkPrefix && value ? `${linkPrefix}${value}` : value?.startsWith("http") ? value : undefined;
+
   return (
     <div className={`rounded-xl border p-4 ${color}`}>
       <div className="flex items-center gap-2 mb-2">
@@ -748,12 +760,23 @@ function SnsCard({
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           placeholder={placeholder}
           className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
         />
       ) : value ? (
-        <p className="text-xs text-gray-600 truncate pl-7">{value}</p>
+        linkUrl ? (
+          <a
+            href={linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-blue-500 hover:underline truncate block pl-7"
+          >
+            {linkUrl}
+          </a>
+        ) : (
+          <p className="text-xs text-gray-600 truncate pl-7">{value}</p>
+        )
       ) : null}
     </div>
   );
