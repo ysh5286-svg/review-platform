@@ -11,12 +11,19 @@ export async function POST(request: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true },
+    select: { role: true, onboarded: true, phone: true },
   });
 
   if (user?.role !== "REVIEWER") {
     return NextResponse.json(
       { error: "리뷰어만 신청할 수 있습니다" },
+      { status: 403 }
+    );
+  }
+
+  if (!user.onboarded || !user.phone) {
+    return NextResponse.json(
+      { error: "체험단 신청을 위해 먼저 추가 정보를 입력해주세요" },
       { status: 403 }
     );
   }

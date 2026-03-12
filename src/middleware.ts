@@ -4,14 +4,15 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Public routes
+  // Public routes - 누구나 접근 가능
   const isPublic =
     pathname === "/" ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/campaigns") ||
-    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
-    pathname === "/favicon.ico";
+    pathname === "/favicon.ico" ||
+    pathname.startsWith("/uploads");
 
   if (isPublic) {
     return NextResponse.next();
