@@ -8,7 +8,8 @@ import NotificationBell from "./NotificationBell";
 
 export default function Header() {
   const { data: session } = useSession();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);      // desktop dropdown
+  const [mobileOpen, setMobileOpen] = useState(false);   // mobile menu
   const [unreadMessages, setUnreadMessages] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -226,61 +227,66 @@ export default function Header() {
           {/* Mobile menu button */}
           <button
             className="md:hidden p-2"
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() => setMobileOpen(!mobileOpen)}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              {mobileOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
             </svg>
           </button>
         </div>
 
         {/* Mobile menu */}
-        {menuOpen && (
+        {mobileOpen && (
           <div className="md:hidden py-4 border-t space-y-1">
-            <Link href="/campaigns" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>
+            <Link href="/campaigns" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>
               캠페인 둘러보기
             </Link>
-            <Link href="/leaderboard" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>
+            <Link href="/leaderboard" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>
               리뷰어 랭킹
             </Link>
-            <Link href="/guide" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>
+            <Link href="/guide" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>
               이용가이드
             </Link>
             {session?.user ? (
               <>
-                <Link href={dashboardLink} className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>
+                <Link href={dashboardLink} className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>
                   대시보드
                 </Link>
-                <Link href="/messages" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>
+                <Link href="/messages" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>
                   메시지 {unreadMessages > 0 && <span className="text-red-500">({unreadMessages})</span>}
                 </Link>
 
                 {session.user.role === "REVIEWER" && (
                   <>
-                    <Link href="/campaigns/recommended" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>맞춤 추천</Link>
-                    <Link href="/reviewer/profile" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>내 프로필</Link>
-                    <Link href="/reviewer/grade" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>내 등급</Link>
-                    <Link href="/reviewer/points" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>포인트</Link>
+                    <Link href="/campaigns/recommended" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>맞춤 추천</Link>
+                    <Link href="/reviewer/profile" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>내 프로필</Link>
+                    <Link href="/reviewer/grade" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>내 등급</Link>
+                    <Link href="/reviewer/points" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>포인트</Link>
                   </>
                 )}
 
                 {session.user.role === "ADVERTISER" && (
                   <>
-                    <Link href="/advertiser/profile" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>내 프로필</Link>
-                    <Link href="/advertiser/points" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>포인트 관리</Link>
-                    <Link href="/advertiser/stats" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>리뷰 통계</Link>
+                    <Link href="/advertiser/profile" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>내 프로필</Link>
+                    <Link href="/advertiser/points" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>포인트 관리</Link>
+                    <Link href="/advertiser/stats" className="block py-2.5 px-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>리뷰 통계</Link>
                   </>
                 )}
 
-                <Link href="/faq" className="block py-2 text-gray-500 hover:text-red-500" onClick={() => setMenuOpen(false)}>
+                <div className="border-t my-2"></div>
+                <Link href="/faq" className="block py-2.5 px-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>
                   FAQ · 도움말
                 </Link>
-                <button onClick={() => signOut({ callbackUrl: "/" })} className="block py-2 text-red-600 cursor-pointer">
+                <button onClick={() => signOut({ callbackUrl: "/" })} className="block w-full text-left py-2.5 px-2 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer">
                   로그아웃
                 </button>
               </>
             ) : (
-              <Link href="/auth/login" className="block py-2 text-red-500 font-medium" onClick={() => setMenuOpen(false)}>
+              <Link href="/auth/login" className="block py-2.5 px-2 text-red-500 font-medium hover:bg-red-50 rounded-lg" onClick={() => setMobileOpen(false)}>
                 로그인
               </Link>
             )}

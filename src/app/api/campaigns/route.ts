@@ -7,24 +7,91 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const platform = searchParams.get("platform") as Platform | null;
+    const channel = searchParams.get("channel"); // contentType or platform
     const contentType = searchParams.get("contentType") as ContentType | null;
     const category = searchParams.get("category");
     const status = searchParams.get("status") as CampaignStatus | null;
     const search = searchParams.get("search");
+    const sort = searchParams.get("sort") || "latest";
+    const regions = searchParams.get("regions"); // comma separated
+    const campaignType = searchParams.get("type"); // 방문형, 배송형 etc
 
     const where: Record<string, unknown> = {};
 
     if (platform) where.platform = platform;
+    // channel maps to platform or contentType
+    if (channel) {
+      const channelToPlatform: Record<string, string> = {
+        NAVER_BLOG: "NAVER_BLOG",
+        INSTAGRAM: "INSTAGRAM",
+        SHORT_FORM: "SHORT_FORM",
+      };
+      const channelToContent: Record<string, string> = {
+        YOUTUBE_SHORTS: "YOUTUBE_SHORTS",
+        INSTAGRAM_REEL: "INSTAGRAM_REEL",
+        TIKTOK: "TIKTOK",
+      };
+      if (channelToPlatform[channel]) {
+        where.platform = channelToPlatform[channel];
+      } else if (channelToContent[channel]) {
+        where.contentType = channelToContent[channel];
+      }
+    }
     if (contentType) where.contentType = contentType;
     if (category) where.category = category;
     if (status) where.status = status;
+
+    // 지역 필터 (businessAddress 또는 title에서 지역 검색)
+    if (regions) {
+      const regionList = regions.split(",").filter(Boolean);
+      if (regionList.length > 0) {
+        where.OR = regionList.map((r: string) => ({
+          OR: [
+            { businessAddress: { contains: r } },
+            { title: { contains: r } },
+            { description: { contains: r } },
+          ],
+        }));
+      }
+    }
+
+    // 유형 필터 (title 또는 description에서 매칭)
+    if (campaignType) {
+      const typeFilter = {
+        OR: [
+          { title: { contains: campaignType } },
+          { description: { contains: campaignType } },
+          { offerDetails: { contains: campaignType } },
+        ],
+      };
+      if (where.OR) {
+        where.AND = [{ OR: where.OR as unknown[] }, typeFilter];
+        delete where.OR;
+      } else {
+        where.OR = typeFilter.OR;
+      }
+    }
+
     if (search) {
-      where.OR = [
+      const searchFilter = [
         { title: { contains: search } },
         { description: { contains: search } },
         { businessName: { contains: search } },
       ];
+      if (where.AND) {
+        (where.AND as unknown[]).push({ OR: searchFilter });
+      } else if (where.OR && !campaignType) {
+        where.AND = [{ OR: where.OR as unknown[] }, { OR: searchFilter }];
+        delete where.OR;
+      } else {
+        where.OR = searchFilter;
+      }
     }
+
+    // 정렬
+    let orderBy: Record<string, string> = { createdAt: "desc" };
+    if (sort === "deadline") orderBy = { endDate: "asc" };
+    if (sort === "popular") orderBy = { maxReviewers: "desc" };
 
     const campaigns = await prisma.campaign.findMany({
       where,
@@ -34,7 +101,7 @@ export async function GET(request: NextRequest) {
         },
         _count: { select: { applications: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy,
     });
 
     return NextResponse.json(campaigns);
