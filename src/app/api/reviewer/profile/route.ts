@@ -13,6 +13,7 @@ export async function GET() {
     select: {
       id: true,
       name: true,
+      nickname: true,
       email: true,
       image: true,
       phone: true,
@@ -21,6 +22,10 @@ export async function GET() {
       instagramId: true,
       youtubeUrl: true,
       tiktokId: true,
+      blogVerified: true,
+      instagramVerified: true,
+      youtubeVerified: true,
+      tiktokVerified: true,
       bankName: true,
       bankAccount: true,
       accountHolder: true,
@@ -47,10 +52,19 @@ export async function GET() {
     where: { reviewerId: session.user.id, status: "ACCEPTED" },
   });
 
+  // 평균 평점
+  const avgRating = await prisma.reviewerRating.aggregate({
+    where: { reviewerId: session.user.id },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
+
   return NextResponse.json({
     ...user,
     approvedReviews,
     acceptedApplications,
+    avgRating: avgRating._avg.rating || 0,
+    ratingCount: avgRating._count.rating || 0,
   });
 }
 
@@ -61,17 +75,35 @@ export async function PATCH(request: Request) {
   }
 
   const body = await request.json();
-  const { name, phone, blogUrl, instagramId, youtubeUrl, tiktokId, bankName, bankAccount, accountHolder } = body;
+  const {
+    name, nickname, phone,
+    blogUrl, instagramId, youtubeUrl, tiktokId,
+    bankName, bankAccount, accountHolder,
+  } = body;
+
+  // 닉네임 중복 체크
+  if (nickname !== undefined && nickname.trim()) {
+    const existing = await prisma.user.findFirst({
+      where: {
+        nickname: nickname.trim(),
+        id: { not: session.user.id },
+      },
+    });
+    if (existing) {
+      return NextResponse.json({ error: "이미 사용 중인 닉네임입니다." }, { status: 409 });
+    }
+  }
 
   const updated = await prisma.user.update({
     where: { id: session.user.id },
     data: {
       ...(name !== undefined && { name }),
+      ...(nickname !== undefined && { nickname: nickname?.trim() || null }),
       ...(phone !== undefined && { phone }),
-      ...(blogUrl !== undefined && { blogUrl }),
-      ...(instagramId !== undefined && { instagramId }),
-      ...(youtubeUrl !== undefined && { youtubeUrl }),
-      ...(tiktokId !== undefined && { tiktokId }),
+      ...(blogUrl !== undefined && { blogUrl, blogVerified: false }),
+      ...(instagramId !== undefined && { instagramId, instagramVerified: false }),
+      ...(youtubeUrl !== undefined && { youtubeUrl, youtubeVerified: false }),
+      ...(tiktokId !== undefined && { tiktokId, tiktokVerified: false }),
       ...(bankName !== undefined && { bankName }),
       ...(bankAccount !== undefined && { bankAccount }),
       ...(accountHolder !== undefined && { accountHolder }),
