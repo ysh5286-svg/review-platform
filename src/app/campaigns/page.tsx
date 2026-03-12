@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 interface Campaign {
@@ -88,6 +88,14 @@ const CONTENT_LABELS: Record<string, string> = {
 };
 
 export default function CampaignsPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-20 text-gray-400">로딩중...</div>}>
+      <CampaignsContent />
+    </Suspense>
+  );
+}
+
+function CampaignsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
