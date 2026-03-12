@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 import CampaignApplyButton from "./CampaignApplyButton";
 
 function PlatformBadge({ platform }: { platform: string }) {

@@ -99,6 +99,11 @@ model User {
   pointHistory PointHistory[]
   withdrawals   Withdrawal[]
   notifications Notification[]
+  sentMessages     Message[]       @relation("SentMessages")
+  receivedMessages Message[]       @relation("ReceivedMessages")
+  givenRatings     ReviewerRating[] @relation("GivenRatings")
+  receivedRatings  ReviewerRating[] @relation("ReceivedRatings")
+  pointCharges     PointCharge[]
 }
 
 // ============ 캠페인 ============
@@ -151,6 +156,7 @@ model Campaign {
   updatedAt DateTime @updatedAt
 
   applications Application[]
+  messages     Message[]
 }
 
 // ============ 신청 ============
@@ -200,6 +206,7 @@ model Review {
   createdAt DateTime @default(now())
 
   rankChecks SearchRankCheck[]
+  rating     ReviewerRating?
 }
 
 // ============ 상위노출 체크 ============
@@ -275,4 +282,56 @@ model Notification {
   user User @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
+}
+
+// ============ 메시지/쪽지 ============
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String
+  read       Boolean  @default(false)
+  campaignId String?
+
+  sender   User      @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  campaign Campaign? @relation(fields: [campaignId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ============ 리뷰어 평가 ============
+
+model ReviewerRating {
+  id           String @id @default(cuid())
+  advertiserId String
+  reviewerId   String
+  reviewId     String @unique
+  rating       Int    // 1~5
+  comment      String?
+
+  advertiser User   @relation("GivenRatings", fields: [advertiserId], references: [id])
+  reviewer   User   @relation("ReceivedRatings", fields: [reviewerId], references: [id])
+  review     Review @relation(fields: [reviewId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([advertiserId, reviewId])
+}
+
+// ============ 광고주 포인트 충전 ============
+
+model PointCharge {
+  id           String @id @default(cuid())
+  advertiserId String
+  amount       Int
+  method       String // BANK_TRANSFER, CARD
+  status       String @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  adminNote    String?
+
+  advertiser User @relation(fields: [advertiserId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
 }

@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 const PLATFORMS = [
   { value: "", label: "전체" },
   { value: "NAVER_BLOG", label: "네이버블로그" },

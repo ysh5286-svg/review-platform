@@ -101,10 +101,69 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Features Section */}
+      <section className="max-w-7xl mx-auto px-4 py-16">
+        <h2 className="text-2xl font-bold text-center mb-12">핵심 기능</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {[
+            { icon: "🏆", title: "리뷰어 랭킹", desc: "실적 기반 순위표", link: "/leaderboard" },
+            { icon: "💬", title: "1:1 메시지", desc: "광고주↔리뷰어 소통", link: "/messages" },
+            { icon: "📊", title: "리뷰 통계", desc: "캠페인 성과 분석", link: "/advertiser/stats" },
+            { icon: "⭐", title: "리뷰어 평가", desc: "별점으로 신뢰 구축", link: "/leaderboard" },
+            { icon: "🎯", title: "맞춤 추천", desc: "AI 기반 캠페인 추천", link: "/campaigns/recommended" },
+            { icon: "📱", title: "모바일 앱", desc: "PWA 지원", link: "/campaigns" },
+            { icon: "💰", title: "포인트 시스템", desc: "적립·출금·충전", link: "/reviewer/points" },
+            { icon: "📋", title: "포트폴리오", desc: "리뷰 실적 모아보기", link: "/leaderboard" },
+          ].map((item) => (
+            <Link key={item.title} href={item.link} className="bg-white rounded-xl p-5 border shadow-sm text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              <div className="text-3xl mb-3">{item.icon}</div>
+              <h3 className="font-bold text-sm mb-1">{item.title}</h3>
+              <p className="text-xs text-gray-500">{item.desc}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm">
-          <p>&copy; 2026 핫플여기체험단. All rights reserved.</p>
+      <footer className="bg-gray-900 text-gray-400 py-10">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <h4 className="text-white font-bold mb-3">서비스</h4>
+              <div className="space-y-2 text-sm">
+                <Link href="/campaigns" className="block hover:text-white transition-colors">캠페인 둘러보기</Link>
+                <Link href="/leaderboard" className="block hover:text-white transition-colors">리뷰어 랭킹</Link>
+                <Link href="/faq" className="block hover:text-white transition-colors">자주 묻는 질문</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-white font-bold mb-3">광고주</h4>
+              <div className="space-y-2 text-sm">
+                <Link href="/advertiser/campaigns" className="block hover:text-white transition-colors">캠페인 관리</Link>
+                <Link href="/advertiser/points" className="block hover:text-white transition-colors">포인트 충전</Link>
+                <Link href="/advertiser/stats" className="block hover:text-white transition-colors">리뷰 통계</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-white font-bold mb-3">리뷰어</h4>
+              <div className="space-y-2 text-sm">
+                <Link href="/reviewer/applications" className="block hover:text-white transition-colors">내 신청 내역</Link>
+                <Link href="/reviewer/points" className="block hover:text-white transition-colors">포인트 내역</Link>
+                <Link href="/reviewer/withdraw" className="block hover:text-white transition-colors">출금 신청</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-white font-bold mb-3">정책</h4>
+              <div className="space-y-2 text-sm">
+                <Link href="/terms" className="block hover:text-white transition-colors">이용약관</Link>
+                <Link href="/privacy" className="block hover:text-white transition-colors">개인정보처리방침</Link>
+                <Link href="/faq" className="block hover:text-white transition-colors">FAQ</Link>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 pt-6 text-center text-sm">
+            <p>&copy; 2026 핫플여기체험단. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>
