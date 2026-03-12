@@ -21,9 +21,9 @@ export async function GET() {
   const now = new Date();
 
   const [premium, deadline, newest] = await Promise.all([
-    // 프리미엄: 포인트 높은 순
+    // 프리미엄: 포인트가 걸린 캠페인만 (포인트 높은 순)
     prisma.campaign.findMany({
-      where: { status: "RECRUITING" },
+      where: { status: "RECRUITING", pointReward: { gt: 0 } },
       orderBy: { pointReward: "desc" },
       take: 8,
       include: campaignInclude,
