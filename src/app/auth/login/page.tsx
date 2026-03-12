@@ -97,6 +97,21 @@ export default function LoginPage() {
                 카카오로 시작하기
               </span>
             </button>
+
+            <button
+              onClick={() => signIn("naver", { callbackUrl: "/" })}
+              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#03C75A] rounded-xl hover:bg-[#02b351] hover:shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path
+                  fill="#FFFFFF"
+                  d="M16.27 12.97L7.44 3H3v18h4.73V11.03L16.56 21H21V3h-4.73z"
+                />
+              </svg>
+              <span className="text-sm font-medium text-white">
+                네이버로 시작하기
+              </span>
+            </button>
           </div>
 
           <p className="mt-6 text-center text-xs text-gray-400">
