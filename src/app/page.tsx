@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import CampaignCard, { CampaignCardData } from "@/components/CampaignCard";
 import StartButton from "@/components/StartButton";
 
@@ -11,9 +11,74 @@ interface HomepageData {
   newest: CampaignCardData[];
 }
 
+/* ===== 히어로 슬라이드 데이터 ===== */
+const HERO_SLIDES = [
+  {
+    title: "체험단 매칭,",
+    highlight: "더 쉽고 빠르게",
+    description: "네이버 블로그, 인스타그램, 유튜브 쇼츠, 틱톡까지.\n사장님은 체험단을 모집하고, 리뷰어는 포인트를 적립하세요.",
+    buttonLabel: "캠페인 둘러보기",
+    buttonLink: "/campaigns",
+    showStartButton: true,
+    gradient: "from-red-500/10 to-orange-500/10",
+  },
+  {
+    title: "사장님,",
+    highlight: "체험단 모집이 쉬워집니다",
+    description: "간편한 캠페인 등록으로 블로거·인플루언서를 바로 모집하세요.\n상위노출 키워드 체크까지 한 번에!",
+    buttonLabel: "캠페인 등록하기",
+    buttonLink: "/advertiser/campaigns/new",
+    showStartButton: false,
+    gradient: "from-blue-500/10 to-cyan-500/10",
+  },
+  {
+    title: "리뷰어라면,",
+    highlight: "포인트 적립 시작하세요",
+    description: "맛집, 뷰티, 여행 등 다양한 체험 기회!\n리뷰 작성하고 포인트를 받아보세요.",
+    buttonLabel: "체험단 신청하기",
+    buttonLink: "/campaigns",
+    showStartButton: false,
+    gradient: "from-purple-500/10 to-pink-500/10",
+  },
+  {
+    title: "공지사항",
+    highlight: "핫플여기 체험단 오픈!",
+    description: "새롭게 오픈한 핫플여기 체험단에 오신 것을 환영합니다.\n다양한 혜택과 이벤트를 확인해보세요.",
+    buttonLabel: "자세히 보기",
+    buttonLink: "/faq",
+    showStartButton: false,
+    gradient: "from-amber-500/10 to-red-500/10",
+  },
+];
+
 export default function HomePage() {
   const [data, setData] = useState<HomepageData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [slide, setSlide] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const goToSlide = useCallback((idx: number) => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setSlide(idx);
+    setTimeout(() => setIsTransitioning(false), 500);
+  }, [isTransitioning]);
+
+  const prevSlide = useCallback(() => {
+    goToSlide((slide - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+  }, [slide, goToSlide]);
+
+  const nextSlide = useCallback(() => {
+    goToSlide((slide + 1) % HERO_SLIDES.length);
+  }, [slide, goToSlide]);
+
+  // 자동 슬라이드 (4초)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     fetch("/api/campaigns/homepage")
@@ -23,29 +88,64 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const current = HERO_SLIDES[slide];
+
   return (
     <div>
-      {/* Hero Section - 간결하게 */}
+      {/* Hero 슬라이드 배너 */}
       <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-orange-500/10"></div>
+        <div className={`absolute inset-0 bg-gradient-to-r ${current.gradient} transition-all duration-700`}></div>
         <div className="max-w-7xl mx-auto px-4 py-10 sm:py-14 relative">
-          <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-3">
-              체험단 매칭,{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">더 쉽고 빠르게</span>
+          {/* 좌측 화살표 */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
+            aria-label="이전 슬라이드"
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+          </button>
+
+          {/* 우측 화살표 */}
+          <button
+            onClick={nextSlide}
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
+            aria-label="다음 슬라이드"
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </button>
+
+          {/* 슬라이드 내용 */}
+          <div className="text-center min-h-[140px] sm:min-h-[160px] flex flex-col items-center justify-center">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-3 transition-all duration-500" key={`title-${slide}`} style={{ animation: "fadeInUp 0.5s ease-out" }}>
+              {current.title}{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">{current.highlight}</span>
             </h1>
-            <p className="text-sm sm:text-base text-gray-300 mb-6 max-w-xl mx-auto">
-              네이버 블로그, 인스타그램, 유튜브 쇼츠, 틱톡까지. 지금 바로 시작하세요.
+            <p className="text-sm sm:text-base text-gray-300 mb-6 max-w-xl mx-auto whitespace-pre-line transition-all duration-500" key={`desc-${slide}`} style={{ animation: "fadeInUp 0.5s ease-out 0.1s both" }}>
+              {current.description}
             </p>
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-3 justify-center" key={`btn-${slide}`} style={{ animation: "fadeInUp 0.5s ease-out 0.2s both" }}>
               <Link
-                href="/campaigns"
+                href={current.buttonLink}
                 className="px-6 py-2.5 bg-white text-gray-900 font-semibold rounded-xl text-sm hover:bg-gray-100 hover:scale-105 active:scale-95 transition-all duration-200"
               >
-                캠페인 둘러보기
+                {current.buttonLabel}
               </Link>
-              <StartButton />
+              {current.showStartButton && <StartButton />}
             </div>
+          </div>
+
+          {/* 도트 인디케이터 */}
+          <div className="flex justify-center gap-2 mt-5">
+            {HERO_SLIDES.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goToSlide(i)}
+                className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                  i === slide ? "w-6 bg-white" : "w-2 bg-white/40 hover:bg-white/60"
+                }`}
+                aria-label={`슬라이드 ${i + 1}`}
+              />
+            ))}
           </div>
         </div>
       </section>
