@@ -22,6 +22,7 @@ export default function AdminUsersPage() {
   const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [changing, setChanging] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/users")
@@ -30,6 +31,26 @@ export default function AdminUsersPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleRoleChange(userId: string, newRole: string) {
+    if (!confirm(`이 사용자의 역할을 ${ROLE_MAP[newRole]?.label || newRole}(으)로 변경하시겠습니까?`)) return;
+    setChanging(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setUsers((prev) =>
+          prev.map((u) => (u.id === userId ? { ...u, role: updated.role } : u))
+        );
+      }
+    } finally {
+      setChanging(null);
+    }
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -53,6 +74,7 @@ export default function AdminUsersPage() {
                   <th className="text-center px-4 py-3 font-medium text-gray-500">역할</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-500">포인트</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">가입일</th>
+                  <th className="text-center px-4 py-3 font-medium text-gray-500">역할 변경</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -80,6 +102,22 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-400 text-xs">
                       {new Date(user.createdAt).toLocaleDateString("ko-KR")}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {user.id === session?.user?.id ? (
+                        <span className="text-xs text-gray-400">본인</span>
+                      ) : (
+                        <select
+                          value={user.role || ""}
+                          onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                          disabled={changing === user.id}
+                          className="text-xs border rounded-lg px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer disabled:opacity-50"
+                        >
+                          <option value="REVIEWER">리뷰어</option>
+                          <option value="ADVERTISER">광고주</option>
+                          <option value="ADMIN">관리자</option>
+                        </select>
+                      )}
                     </td>
                   </tr>
                 ))}
