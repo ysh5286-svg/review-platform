@@ -76,6 +76,12 @@ export default function Header() {
             >
               랭킹
             </Link>
+            <Link
+              href="/guide"
+              className="text-gray-600 hover:text-red-500 text-sm font-medium transition-colors duration-200"
+            >
+              이용가이드
+            </Link>
 
             {session?.user ? (
               <>
@@ -190,6 +196,9 @@ export default function Header() {
 
                       <div className="border-t my-1"></div>
 
+                      <Link href="/guide" className="block px-4 py-2 text-sm text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors duration-150" onClick={() => setMenuOpen(false)}>
+                        이용가이드
+                      </Link>
                       <Link href="/faq" className="block px-4 py-2 text-sm text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors duration-150" onClick={() => setMenuOpen(false)}>
                         FAQ · 도움말
                       </Link>
@@ -233,6 +242,9 @@ export default function Header() {
             </Link>
             <Link href="/leaderboard" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>
               리뷰어 랭킹
+            </Link>
+            <Link href="/guide" className="block py-2 text-gray-600 hover:text-red-500" onClick={() => setMenuOpen(false)}>
+              이용가이드
             </Link>
             {session?.user ? (
               <>

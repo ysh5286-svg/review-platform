@@ -1,6 +1,5 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -13,28 +12,50 @@ interface Application {
     id: string;
     title: string;
     platform: string;
+    contentType: string;
     businessName: string;
     pointReward: number;
     status: string;
+    startDate: string;
+    endDate: string;
+    imageUrl: string | null;
+    maxReviewers: number;
+    _count: { applications: number };
   };
+  review: {
+    id: string;
+    status: string;
+    reviewUrl: string;
+  } | null;
 }
 
-const APP_STATUS: Record<string, { label: string; className: string }> = {
-  PENDING: { label: "심사중", className: "bg-yellow-100 text-yellow-700" },
-  ACCEPTED: { label: "선정됨", className: "bg-green-100 text-green-700" },
-  REJECTED: { label: "미선정", className: "bg-red-100 text-red-700" },
+type FilterTab = "all" | "pending" | "accepted" | "review" | "completed";
+
+const PLATFORM_ICONS: Record<string, { icon: string; label: string }> = {
+  NAVER_BLOG: { icon: "📝", label: "블로그" },
+  INSTAGRAM: { icon: "📸", label: "인스타" },
+  SHORT_FORM: { icon: "🎬", label: "숏폼" },
 };
 
-const PLATFORM_MAP: Record<string, { label: string; className: string }> = {
-  NAVER_BLOG: { label: "네이버블로그", className: "bg-green-100 text-green-700" },
-  INSTAGRAM: { label: "인스타그램", className: "bg-pink-100 text-pink-700" },
-  SHORT_FORM: { label: "숏폼영상", className: "bg-purple-100 text-purple-700" },
+const CONTENT_LABELS: Record<string, string> = {
+  BLOG_REVIEW: "블로그리뷰",
+  INSTAGRAM_POST: "인스타포스트",
+  INSTAGRAM_REEL: "릴스",
+  YOUTUBE_SHORTS: "쇼츠",
+  TIKTOK: "틱톡",
+};
+
+const CAMPAIGN_TYPE_LABELS: Record<string, string> = {
+  RECRUITING: "모집중",
+  IN_PROGRESS: "진행중",
+  COMPLETED: "완료",
+  CLOSED: "마감",
 };
 
 export default function ReviewerApplicationsPage() {
-  const { data: session } = useSession();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<FilterTab>("all");
 
   useEffect(() => {
     fetch("/api/reviewer/applications")
@@ -44,63 +65,155 @@ export default function ReviewerApplicationsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // 필터링
+  const filtered = applications.filter((app) => {
+    if (filter === "all") return true;
+    if (filter === "pending") return app.status === "PENDING";
+    if (filter === "accepted") return app.status === "ACCEPTED" && !app.review;
+    if (filter === "review") return app.status === "ACCEPTED" && app.review && app.review.status !== "APPROVED";
+    if (filter === "completed") return app.review?.status === "APPROVED";
+    return true;
+  });
+
+  // 카운트
+  const counts = {
+    all: applications.length,
+    pending: applications.filter((a) => a.status === "PENDING").length,
+    accepted: applications.filter((a) => a.status === "ACCEPTED" && !a.review).length,
+    review: applications.filter((a) => a.status === "ACCEPTED" && a.review && a.review.status !== "APPROVED").length,
+    completed: applications.filter((a) => a.review?.status === "APPROVED").length,
+  };
+
+  function getStatusInfo(app: Application) {
+    if (app.status === "REJECTED") return { label: "미선정", color: "bg-gray-400", textColor: "text-gray-500" };
+    if (app.status === "PENDING") return { label: "신청중", color: "bg-yellow-400", textColor: "text-yellow-600" };
+    if (app.status === "ACCEPTED" && !app.review) {
+      const daysLeft = Math.ceil((new Date(app.campaign.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      if (daysLeft > 0) return { label: `D-${daysLeft} 리뷰 등록`, color: "bg-blue-500", textColor: "text-blue-600" };
+      return { label: "기한 만료", color: "bg-red-500", textColor: "text-red-500" };
+    }
+    if (app.review?.status === "SUBMITTED") return { label: "검수중", color: "bg-orange-400", textColor: "text-orange-600" };
+    if (app.review?.status === "APPROVED") return { label: "등록 완료", color: "bg-green-500", textColor: "text-green-600" };
+    if (app.review?.status === "REJECTED") return { label: "리뷰 반려", color: "bg-red-500", textColor: "text-red-500" };
+    return { label: "진행중", color: "bg-blue-400", textColor: "text-blue-600" };
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">내 신청 내역</h1>
+    <div className="max-w-3xl mx-auto px-4 py-6 pb-24">
+      <h1 className="text-xl font-bold text-gray-900 mb-5">내 체험단</h1>
+
+      {/* 필터 탭 */}
+      <div className="flex gap-1.5 overflow-x-auto pb-3 mb-4 scrollbar-hide">
+        {([
+          { key: "all", label: "전체" },
+          { key: "pending", label: "신청중" },
+          { key: "accepted", label: "리뷰 대기" },
+          { key: "review", label: "검수중" },
+          { key: "completed", label: "완료" },
+        ] as const).map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setFilter(tab.key)}
+            className={`whitespace-nowrap px-3.5 py-2 text-xs font-medium rounded-full transition-all cursor-pointer ${
+              filter === tab.key
+                ? "bg-red-500 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            {tab.label}
+            {counts[tab.key] > 0 && (
+              <span className={`ml-1 ${filter === tab.key ? "text-white/80" : "text-gray-400"}`}>
+                {counts[tab.key]}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
       {loading ? (
         <div className="text-center py-16 text-gray-400">로딩중...</div>
-      ) : applications.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border">
-          <p className="text-gray-400 mb-4">신청한 캠페인이 없습니다.</p>
-          <Link href="/campaigns" className="text-red-500 font-medium hover:underline">
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-2xl border">
+          <p className="text-4xl mb-3">📋</p>
+          <p className="text-gray-400 mb-4 text-sm">
+            {filter === "all" ? "신청한 체험단이 없습니다" : "해당하는 체험단이 없습니다"}
+          </p>
+          <Link
+            href="/campaigns"
+            className="inline-block px-5 py-2.5 bg-red-500 text-white text-sm font-medium rounded-xl hover:bg-red-600 transition-colors"
+          >
             캠페인 둘러보기
           </Link>
         </div>
       ) : (
-        <div className="space-y-4">
-          {applications.map((app) => (
-            <div key={app.id} className="bg-white rounded-xl border shadow-sm p-5">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        PLATFORM_MAP[app.campaign.platform]?.className || "bg-gray-100"
-                      }`}
-                    >
-                      {PLATFORM_MAP[app.campaign.platform]?.label || app.campaign.platform}
-                    </span>
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        APP_STATUS[app.status]?.className || "bg-gray-100"
-                      }`}
-                    >
-                      {APP_STATUS[app.status]?.label || app.status}
+        <div className="grid grid-cols-2 gap-3">
+          {filtered.map((app) => {
+            const status = getStatusInfo(app);
+            const platform = PLATFORM_ICONS[app.campaign.platform];
+
+            return (
+              <Link
+                key={app.id}
+                href={`/campaigns/${app.campaign.id}`}
+                className="bg-white rounded-2xl border shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+              >
+                {/* 이미지 */}
+                <div className="relative aspect-[4/3] bg-gray-100">
+                  {app.campaign.imageUrl ? (
+                    <img
+                      src={app.campaign.imageUrl}
+                      alt={app.campaign.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-3xl text-gray-300">
+                      📷
+                    </div>
+                  )}
+
+                  {/* 상태 뱃지 */}
+                  <div className="absolute bottom-2 left-2 right-2">
+                    <span className={`inline-block ${status.color} text-white text-[10px] font-bold px-2.5 py-1 rounded-lg`}>
+                      {status.label}
                     </span>
                   </div>
-                  <Link
-                    href={`/campaigns/${app.campaign.id}`}
-                    className="text-lg font-semibold text-gray-900 hover:text-red-500"
-                  >
-                    {app.campaign.title}
-                  </Link>
-                  <p className="text-sm text-gray-500 mt-1">{app.campaign.businessName}</p>
-                  {app.message && (
-                    <p className="text-sm text-gray-400 mt-1">내 메시지: {app.message}</p>
+
+                  {/* 신청수 (신청중일 때) */}
+                  {app.status === "PENDING" && (
+                    <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full">
+                      신청 <span className="font-bold">{app.campaign._count.applications}</span> / {app.campaign.maxReviewers}
+                    </div>
                   )}
                 </div>
-                <div className="text-right">
-                  <p className="text-red-500 font-bold">
-                    {app.campaign.pointReward.toLocaleString()}P
+
+                {/* 정보 */}
+                <div className="p-3">
+                  <h3 className="text-sm font-bold text-gray-900 line-clamp-1 mb-1">
+                    {app.campaign.businessName}
+                  </h3>
+                  <p className="text-xs text-gray-500 line-clamp-2 mb-2 leading-relaxed">
+                    {app.campaign.title}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {new Date(app.createdAt).toLocaleDateString("ko-KR")}
-                  </p>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] text-gray-500">
+                      {platform?.icon} {platform?.label}
+                    </span>
+                    <span className="text-gray-300">|</span>
+                    <span className="text-[10px] text-gray-500">
+                      {CONTENT_LABELS[app.campaign.contentType] || app.campaign.contentType}
+                    </span>
+                  </div>
+
+                  {app.campaign.pointReward > 0 && (
+                    <p className="text-xs font-bold text-red-500 mt-1.5">
+                      {app.campaign.pointReward.toLocaleString()} P
+                    </p>
+                  )}
                 </div>
-              </div>
-            </div>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

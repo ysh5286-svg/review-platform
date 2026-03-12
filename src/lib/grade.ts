@@ -1,28 +1,64 @@
 import { ReviewerGrade } from "@/generated/prisma/client";
 
+// 등급별 라벨
+export const GRADE_LABELS: Record<string, string> = {
+  BEGINNER: "일반",
+  STANDARD: "초급",
+  INTERMEDIATE: "중급",
+  ADVANCED: "고급",
+  PREMIUM: "프리미어",
+  INFLUENCER: "네이버 인플",
+};
+
+// 등급별 아이콘
+export const GRADE_ICONS: Record<string, string> = {
+  BEGINNER: "⚪",
+  STANDARD: "🥉",
+  INTERMEDIATE: "🥈",
+  ADVANCED: "🥇",
+  PREMIUM: "💎",
+  INFLUENCER: "🅝",
+};
+
 // 등급별 조건
 export const GRADE_REQUIREMENTS = {
-  BEGINNER: { minReviews: 0, minApprovalRate: 0, minTopRate: 0, label: "신입" },
-  STANDARD: { minReviews: 5, minApprovalRate: 70, minTopRate: 0, label: "일반" },
-  PREMIUM: { minReviews: 15, minApprovalRate: 85, minTopRate: 20, label: "프리미엄" },
-  VIP: { minReviews: 30, minApprovalRate: 90, minTopRate: 40, label: "VIP" },
+  BEGINNER: { minReviews: 0, minApprovalRate: 0, minTopRate: 0, label: "일반" },
+  STANDARD: { minReviews: 3, minApprovalRate: 60, minTopRate: 0, label: "초급" },
+  INTERMEDIATE: { minReviews: 10, minApprovalRate: 75, minTopRate: 10, label: "중급" },
+  ADVANCED: { minReviews: 20, minApprovalRate: 85, minTopRate: 25, label: "고급" },
+  PREMIUM: { minReviews: 35, minApprovalRate: 90, minTopRate: 40, label: "프리미어" },
+  INFLUENCER: { minReviews: 0, minApprovalRate: 0, minTopRate: 0, label: "네이버 인플" },
 } as const;
 
 // 등급별 혜택
 export const GRADE_BENEFITS = {
-  BEGINNER: { pointBonus: 0, prioritySelection: false, maxApplications: 3 },
-  STANDARD: { pointBonus: 5, prioritySelection: false, maxApplications: 5 },
-  PREMIUM: { pointBonus: 10, prioritySelection: true, maxApplications: 10 },
-  VIP: { pointBonus: 20, prioritySelection: true, maxApplications: 20 },
+  BEGINNER: { pointBonus: 0, prioritySelection: false, maxApplications: 3, description: "모든 체험단에 선정될 확률 낮음" },
+  STANDARD: { pointBonus: 3, prioritySelection: false, maxApplications: 5, description: "일반 체험단에 선정될 확률 높음" },
+  INTERMEDIATE: { pointBonus: 5, prioritySelection: false, maxApplications: 8, description: "일반 체험단에 선정될 확률 매우 높음" },
+  ADVANCED: { pointBonus: 10, prioritySelection: true, maxApplications: 12, description: "프리미엄 체험단에 선정될 확률 높음" },
+  PREMIUM: { pointBonus: 15, prioritySelection: true, maxApplications: 20, description: "프리미엄 체험단에 선정될 확률 매우 높음" },
+  INFLUENCER: { pointBonus: 20, prioritySelection: true, maxApplications: 30, description: "네이버에서 공식 인증한 네이버 인플루언서" },
 } as const;
 
 // 등급 색상
 export const GRADE_COLORS = {
-  BEGINNER: { bg: "bg-gray-100", text: "text-gray-600", badge: "bg-gray-500" },
-  STANDARD: { bg: "bg-blue-100", text: "text-blue-600", badge: "bg-blue-500" },
-  PREMIUM: { bg: "bg-purple-100", text: "text-purple-600", badge: "bg-purple-500" },
-  VIP: { bg: "bg-yellow-100", text: "text-yellow-700", badge: "bg-yellow-500" },
+  BEGINNER: { bg: "bg-gray-100", text: "text-gray-600", badge: "bg-gray-400", border: "border-gray-300" },
+  STANDARD: { bg: "bg-amber-50", text: "text-amber-700", badge: "bg-amber-600", border: "border-amber-400" },
+  INTERMEDIATE: { bg: "bg-yellow-50", text: "text-yellow-700", badge: "bg-yellow-500", border: "border-yellow-400" },
+  ADVANCED: { bg: "bg-orange-50", text: "text-orange-700", badge: "bg-orange-500", border: "border-orange-400" },
+  PREMIUM: { bg: "bg-blue-50", text: "text-blue-700", badge: "bg-blue-600", border: "border-blue-400" },
+  INFLUENCER: { bg: "bg-green-50", text: "text-green-700", badge: "bg-green-600", border: "border-green-400" },
 } as const;
+
+// 등급 순서 (비교용)
+export const GRADE_ORDER: ReviewerGrade[] = [
+  "BEGINNER",
+  "STANDARD",
+  "INTERMEDIATE",
+  "ADVANCED",
+  "PREMIUM",
+  "INFLUENCER",
+];
 
 // 등급 산정 로직
 export function calculateGrade(stats: {
@@ -35,19 +71,27 @@ export function calculateGrade(stats: {
   const topRate = totalReviews > 0 ? (topRankCount / totalReviews) * 100 : 0;
 
   if (
-    totalReviews >= GRADE_REQUIREMENTS.VIP.minReviews &&
-    approvalRate >= GRADE_REQUIREMENTS.VIP.minApprovalRate &&
-    topRate >= GRADE_REQUIREMENTS.VIP.minTopRate
-  ) {
-    return "VIP";
-  }
-
-  if (
     totalReviews >= GRADE_REQUIREMENTS.PREMIUM.minReviews &&
     approvalRate >= GRADE_REQUIREMENTS.PREMIUM.minApprovalRate &&
     topRate >= GRADE_REQUIREMENTS.PREMIUM.minTopRate
   ) {
     return "PREMIUM";
+  }
+
+  if (
+    totalReviews >= GRADE_REQUIREMENTS.ADVANCED.minReviews &&
+    approvalRate >= GRADE_REQUIREMENTS.ADVANCED.minApprovalRate &&
+    topRate >= GRADE_REQUIREMENTS.ADVANCED.minTopRate
+  ) {
+    return "ADVANCED";
+  }
+
+  if (
+    totalReviews >= GRADE_REQUIREMENTS.INTERMEDIATE.minReviews &&
+    approvalRate >= GRADE_REQUIREMENTS.INTERMEDIATE.minApprovalRate &&
+    topRate >= GRADE_REQUIREMENTS.INTERMEDIATE.minTopRate
+  ) {
+    return "INTERMEDIATE";
   }
 
   if (
@@ -61,5 +105,5 @@ export function calculateGrade(stats: {
 }
 
 export function getGradeLabel(grade: ReviewerGrade): string {
-  return GRADE_REQUIREMENTS[grade].label;
+  return GRADE_LABELS[grade] || grade;
 }

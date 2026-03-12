@@ -19,10 +19,12 @@ interface GradeInfo {
 }
 
 const GRADE_STYLES: Record<string, { bg: string; text: string; border: string; icon: string }> = {
-  BEGINNER: { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-300", icon: "🌱" },
-  STANDARD: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-300", icon: "⭐" },
-  PREMIUM: { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-300", icon: "💎" },
-  VIP: { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-300", icon: "👑" },
+  BEGINNER: { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-300", icon: "⚪" },
+  STANDARD: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-300", icon: "🥉" },
+  INTERMEDIATE: { bg: "bg-yellow-50", text: "text-yellow-700", border: "border-yellow-300", icon: "🥈" },
+  ADVANCED: { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-300", icon: "🥇" },
+  PREMIUM: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-300", icon: "💎" },
+  INFLUENCER: { bg: "bg-green-50", text: "text-green-700", border: "border-green-300", icon: "🅝" },
 };
 
 export default function GradePage() {
@@ -82,7 +84,7 @@ export default function GradePage() {
   }
 
   const currentStyle = GRADE_STYLES[gradeInfo.currentGrade] || GRADE_STYLES.BEGINNER;
-  const grades = ["BEGINNER", "STANDARD", "PREMIUM", "VIP"];
+  const grades = ["BEGINNER", "STANDARD", "INTERMEDIATE", "ADVANCED", "PREMIUM", "INFLUENCER"];
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -145,7 +147,7 @@ export default function GradePage() {
               <p className="text-sm text-gray-500">
                 {gradeInfo.benefits.prioritySelection
                   ? "광고주에게 우선 선정 뱃지가 표시됩니다"
-                  : "PREMIUM 등급부터 적용됩니다"}
+                  : "고급 등급부터 적용됩니다"}
               </p>
             </div>
           </div>

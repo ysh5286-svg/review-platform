@@ -2,22 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { GRADE_COLORS } from "@/lib/grade";
+import { GRADE_COLORS, GRADE_LABELS, GRADE_ICONS, GRADE_ORDER } from "@/lib/grade";
 import type { ReviewerGrade } from "@/generated/prisma/client";
-
-const GRADE_LABELS: Record<string, string> = {
-  BEGINNER: "신입",
-  STANDARD: "일반",
-  PREMIUM: "프리미엄",
-  VIP: "VIP",
-};
-
-const GRADE_ICONS: Record<string, string> = {
-  BEGINNER: "🌱",
-  STANDARD: "⭐",
-  PREMIUM: "💎",
-  VIP: "👑",
-};
 
 interface Profile {
   id: string;
@@ -300,20 +286,18 @@ export default function ReviewerProfilePage() {
           </span>
         </div>
         <div className="flex items-center gap-1">
-          {(["BEGINNER", "STANDARD", "PREMIUM", "VIP"] as const).map((g, i) => {
+          {GRADE_ORDER.map((g, i) => {
             const isActive = g === profile.grade;
-            const isPast =
-              ["BEGINNER", "STANDARD", "PREMIUM", "VIP"].indexOf(g) <=
-              ["BEGINNER", "STANDARD", "PREMIUM", "VIP"].indexOf(profile.grade);
+            const isPast = GRADE_ORDER.indexOf(g) <= GRADE_ORDER.indexOf(profile.grade);
             return (
               <div key={g} className="flex-1 flex flex-col items-center gap-1">
                 <div
                   className={`w-full h-2 rounded-full ${
                     isPast ? "bg-red-500" : "bg-gray-200"
-                  } ${i === 0 ? "rounded-l-full" : ""} ${i === 3 ? "rounded-r-full" : ""}`}
+                  } ${i === 0 ? "rounded-l-full" : ""} ${i === GRADE_ORDER.length - 1 ? "rounded-r-full" : ""}`}
                 />
                 <span
-                  className={`text-[10px] font-medium ${
+                  className={`text-[9px] font-medium ${
                     isActive ? "text-red-500 font-bold" : isPast ? "text-gray-600" : "text-gray-400"
                   }`}
                 >

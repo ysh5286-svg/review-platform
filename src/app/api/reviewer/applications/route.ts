@@ -22,9 +22,20 @@ export async function GET() {
           pointReward: true,
           startDate: true,
           endDate: true,
+          imageUrl: true,
+          maxReviewers: true,
+          _count: {
+            select: { applications: true },
+          },
         },
       },
-      review: true,
+      review: {
+        select: {
+          id: true,
+          status: true,
+          reviewUrl: true,
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });

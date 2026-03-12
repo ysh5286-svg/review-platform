@@ -53,10 +53,12 @@ enum Role {
 }
 
 enum ReviewerGrade {
-  BEGINNER
-  STANDARD
-  PREMIUM
-  VIP
+  BEGINNER      // 일반
+  STANDARD      // 초급
+  INTERMEDIATE  // 중급
+  ADVANCED      // 고급
+  PREMIUM       // 프리미어
+  INFLUENCER    // 네이버 인플
 }
 
 model User {
