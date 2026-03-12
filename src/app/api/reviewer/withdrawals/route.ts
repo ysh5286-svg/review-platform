@@ -2,6 +2,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+// 원천징수 세율 3.3% (소득세 3% + 지방소득세 0.3%)
+const TAX_RATE = 0.033;
+
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
@@ -51,11 +54,17 @@ export async function POST(request: Request) {
     );
   }
 
+  // 3.3% 원천징수 계산
+  const tax = Math.floor(amount * TAX_RATE);
+  const netAmount = amount - tax;
+
   const [withdrawal] = await prisma.$transaction([
     prisma.withdrawal.create({
       data: {
         userId: session.user.id,
         amount,
+        tax,
+        netAmount,
         bankName,
         bankAccount,
         accountHolder,
@@ -70,7 +79,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         amount: -amount,
         type: "WITHDRAW",
-        description: `출금 신청 (${bankName} ${bankAccount})`,
+        description: `출금 ${amount.toLocaleString()}원 (세금 ${tax.toLocaleString()}원 / 실수령 ${netAmount.toLocaleString()}원)`,
         balanceAfter: user.points - amount,
       },
     }),

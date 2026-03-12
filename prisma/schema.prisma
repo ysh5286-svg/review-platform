@@ -246,7 +246,9 @@ enum WithdrawalStatus {
 model Withdrawal {
   id            String           @id @default(cuid())
   userId        String
-  amount        Int
+  amount        Int              // 출금 신청 금액
+  tax           Int              @default(0) // 원천징수세 (3.3%)
+  netAmount     Int              @default(0) // 실수령액 (amount - tax)
   bankName      String
   bankAccount   String
   accountHolder String

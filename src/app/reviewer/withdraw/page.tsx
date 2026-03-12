@@ -17,6 +17,8 @@ const BANKS = [
 interface Withdrawal {
   id: string;
   amount: number;
+  tax: number;
+  netAmount: number;
   bankName: string;
   bankAccount: string;
   accountHolder: string;
@@ -122,7 +124,10 @@ export default function ReviewerWithdrawPage() {
           <p className="text-sm text-red-500 mb-1">보유 포인트</p>
           <p className="text-3xl font-bold text-red-600">{balance.toLocaleString()}P</p>
         </div>
-        <p className="text-sm text-red-500">최소 출금: 5,000원</p>
+        <div className="text-right">
+          <p className="text-sm text-red-500">최소 출금: 5,000원</p>
+          <p className="text-xs text-gray-400 mt-1">원천징수 3.3% 공제 후 지급</p>
+        </div>
       </div>
 
       {/* Withdrawal Form */}
@@ -141,6 +146,22 @@ export default function ReviewerWithdrawPage() {
             className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
             placeholder="5000"
           />
+          {Number(form.amount) >= 5000 && (
+            <div className="mt-2 bg-gray-50 rounded-lg p-3 space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">출금 신청액</span>
+                <span className="text-gray-700">{Number(form.amount).toLocaleString()}원</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">원천징수세 (3.3%)</span>
+                <span className="text-red-500">-{Math.floor(Number(form.amount) * 0.033).toLocaleString()}원</span>
+              </div>
+              <div className="border-t pt-1 flex justify-between text-sm font-semibold">
+                <span className="text-gray-700">실수령액</span>
+                <span className="text-green-600">{(Number(form.amount) - Math.floor(Number(form.amount) * 0.033)).toLocaleString()}원</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -207,7 +228,9 @@ export default function ReviewerWithdrawPage() {
             <thead className="bg-gray-50 border-b">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">날짜</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">금액</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500">신청액</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500">세금</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500">실수령</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-500">계좌</th>
                 <th className="text-center px-4 py-3 font-medium text-gray-500">상태</th>
               </tr>
@@ -221,8 +244,14 @@ export default function ReviewerWithdrawPage() {
                   <td className="px-4 py-3 text-right font-medium text-gray-900">
                     {wd.amount.toLocaleString()}원
                   </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {wd.bankName} {wd.bankAccount} ({wd.accountHolder})
+                  <td className="px-4 py-3 text-right text-red-500 text-xs">
+                    -{(wd.tax || Math.floor(wd.amount * 0.033)).toLocaleString()}원
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium text-green-600">
+                    {(wd.netAmount || wd.amount - Math.floor(wd.amount * 0.033)).toLocaleString()}원
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">
+                    {wd.bankName} {wd.accountHolder}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span

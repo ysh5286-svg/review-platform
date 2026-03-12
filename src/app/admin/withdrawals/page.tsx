@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 interface Withdrawal {
   id: string;
   amount: number;
+  tax: number;
+  netAmount: number;
   bankName: string;
   bankAccount: string;
   accountHolder: string;
@@ -70,7 +72,9 @@ export default function AdminWithdrawalsPage() {
                 <tr>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">날짜</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">사용자</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">금액</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">신청액</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">세금(3.3%)</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">실지급액</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">계좌 정보</th>
                   <th className="text-center px-4 py-3 font-medium text-gray-500">상태</th>
                   <th className="text-center px-4 py-3 font-medium text-gray-500">액션</th>
@@ -88,6 +92,12 @@ export default function AdminWithdrawalsPage() {
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900">
                       {wd.amount.toLocaleString()}원
+                    </td>
+                    <td className="px-4 py-3 text-right text-red-500 text-xs">
+                      -{(wd.tax || Math.floor(wd.amount * 0.033)).toLocaleString()}원
+                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-green-600">
+                      {(wd.netAmount || wd.amount - Math.floor(wd.amount * 0.033)).toLocaleString()}원
                     </td>
                     <td className="px-4 py-3 text-gray-600">
                       <p>{wd.bankName} {wd.bankAccount}</p>
