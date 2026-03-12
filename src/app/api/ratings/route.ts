@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { reviewId, rating, comment } = await request.json();
+  const { reviewId, rating, comment, tags } = await request.json();
 
   if (!reviewId || !rating || rating < 1 || rating > 5) {
     return NextResponse.json({ error: "유효하지 않은 평가입니다" }, { status: 400 });
@@ -38,9 +38,10 @@ export async function POST(request: Request) {
       reviewerId: review.reviewerId,
       reviewId,
       rating,
+      tags: tags ? JSON.stringify(tags) : undefined,
       comment,
     },
-    update: { rating, comment },
+    update: { rating, tags: tags ? JSON.stringify(tags) : undefined, comment },
   });
 
   return NextResponse.json(ratingRecord, { status: 201 });
