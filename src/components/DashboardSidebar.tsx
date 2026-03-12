@@ -17,6 +17,7 @@ const REVIEWER_MENU = [
 
 const ADVERTISER_MENU = [
   { label: "내 캠페인", path: "/advertiser/campaigns", icon: "📢" },
+  { label: "내 플레이스", path: "/advertiser/profile#place", icon: "📍" },
   { label: "내 프로필", path: "/advertiser/profile", icon: "👤" },
   { label: "포인트 관리", path: "/advertiser/points", icon: "💰" },
   { label: "리뷰 통계", path: "/advertiser/stats", icon: "📊" },

@@ -12,7 +12,7 @@ export async function GET() {
     where: { id: session.user.id },
     select: {
       id: true, name: true, email: true, image: true, phone: true,
-      businessName: true, businessCategory: true, points: true, createdAt: true,
+      businessName: true, businessCategory: true, naverPlaceUrl: true, points: true, createdAt: true,
     },
   });
 
@@ -51,13 +51,13 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { name, phone, businessName, businessCategory } = await request.json();
+  const { name, phone, businessName, businessCategory, naverPlaceUrl } = await request.json();
 
   const updated = await prisma.user.update({
     where: { id: session.user.id },
-    data: { name, phone, businessName, businessCategory },
+    data: { name, phone, businessName, businessCategory, naverPlaceUrl },
     select: {
-      id: true, name: true, phone: true, businessName: true, businessCategory: true,
+      id: true, name: true, phone: true, businessName: true, businessCategory: true, naverPlaceUrl: true,
     },
   });
 

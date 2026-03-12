@@ -86,6 +86,7 @@ model User {
   // 광고주 사업체 정보
   businessName     String?
   businessCategory String?
+  naverPlaceUrl    String?
 
   // 출금 계좌 정보
   bankName      String?
