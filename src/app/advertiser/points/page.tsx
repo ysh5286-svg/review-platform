@@ -156,8 +156,9 @@ export default function AdvertiserPointsPage() {
           {chargeMethod === "BANK_TRANSFER" && (
             <div className="bg-blue-50 rounded-lg p-4 mb-4 text-sm text-blue-800">
               <p className="font-semibold mb-1">입금 계좌 안내</p>
-              <p>국민은행 123-456-789012 (핫플여기체험단)</p>
-              <p className="text-xs mt-1 text-blue-600">* 입금 후 관리자 확인까지 영업일 기준 1~2일 소요됩니다.</p>
+              <p>하나은행 010-668699-38807 (다즐피플)</p>
+              <p className="text-xs mt-1 text-blue-600">* 입금자명을 회원명과 동일하게 입력해주세요.</p>
+              <p className="text-xs text-blue-600">* 입금 후 관리자 확인까지 영업일 기준 1~2일 소요됩니다.</p>
             </div>
           )}
 
