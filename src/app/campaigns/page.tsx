@@ -1,31 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState, useCallback, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import CampaignCard, { CampaignCardData } from "@/components/CampaignCard";
 
-interface Campaign {
-  id: string;
-  campaignNumber: number;
-  title: string;
-  description: string;
-  category: string;
-  platform: string;
-  contentType: string;
-  imageUrl: string | null;
-  businessName: string;
-  businessAddress: string | null;
-  offerDetails: string;
-  pointReward: number;
-  maxReviewers: number;
-  startDate: string;
-  endDate: string;
-  status: string;
-  createdAt: string;
-  advertiser: { businessName: string | null };
-  _count: { applications: number };
-}
+type Campaign = CampaignCardData;
 
 /* ===== 필터 옵션 ===== */
 const REGIONS = [
@@ -74,20 +53,6 @@ const SORTS = [
   { value: "popular", label: "인기순" },
 ];
 
-const PLATFORM_ICONS: Record<string, string> = {
-  NAVER_BLOG: "📝",
-  INSTAGRAM: "📸",
-  SHORT_FORM: "🎬",
-};
-
-const CONTENT_LABELS: Record<string, string> = {
-  BLOG_REVIEW: "블로그",
-  INSTAGRAM_POST: "인스타포스트",
-  INSTAGRAM_REEL: "릴스",
-  YOUTUBE_SHORTS: "쇼츠",
-  TIKTOK: "틱톡",
-};
-
 export default function CampaignsPage() {
   return (
     <Suspense fallback={<div className="text-center py-20 text-gray-400">로딩중...</div>}>
@@ -97,7 +62,6 @@ export default function CampaignsPage() {
 }
 
 function CampaignsContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -155,11 +119,6 @@ function CampaignsContent() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     fetchCampaigns();
-  }
-
-  function getDaysLeft(endDate: string) {
-    const diff = Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    return diff;
   }
 
   return (
@@ -280,82 +239,9 @@ function CampaignsContent() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {campaigns.map((campaign) => {
-            const daysLeft = getDaysLeft(campaign.endDate);
-            const isRecruiting = campaign.status === "RECRUITING";
-
-            return (
-              <Link
-                key={campaign.id}
-                href={`/campaigns/${campaign.id}`}
-                className="bg-white rounded-xl border shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-              >
-                {/* 이미지 */}
-                <div className="relative aspect-[4/3] bg-gray-100">
-                  {campaign.imageUrl ? (
-                    <Image
-                      src={campaign.imageUrl}
-                      alt={campaign.title}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl text-gray-300">
-                      📷
-                    </div>
-                  )}
-
-                  {/* 상태 뱃지 */}
-                  {isRecruiting && daysLeft > 0 && (
-                    <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-                      <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                        {daysLeft}일 남음
-                      </span>
-                      <span className="bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">
-                        신청 <span className="font-bold">{campaign._count.applications}</span> / {campaign.maxReviewers}
-                      </span>
-                    </div>
-                  )}
-
-                  {!isRecruiting && (
-                    <div className="absolute bottom-2 left-2">
-                      <span className="bg-gray-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                        {campaign.status === "IN_PROGRESS" ? "진행중" : campaign.status === "COMPLETED" ? "완료" : "마감"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* 정보 */}
-                <div className="p-3">
-                  {/* 번호 + 플랫폼 + 유형 */}
-                  <div className="flex items-center gap-1 mb-1.5 text-[10px] text-gray-500">
-                    <span className="font-bold text-gray-400">#{campaign.campaignNumber}</span>
-                    <span className="text-gray-300">|</span>
-                    <span>{PLATFORM_ICONS[campaign.platform] || "📋"}</span>
-                    <span>{CONTENT_LABELS[campaign.contentType] || campaign.contentType}</span>
-                    <span className="text-gray-300">|</span>
-                    <span>{campaign.category}</span>
-                  </div>
-
-                  {/* 타이틀 */}
-                  <h3 className="text-sm font-bold text-gray-900 line-clamp-1 mb-0.5">
-                    {campaign.advertiser?.businessName || campaign.businessName}
-                  </h3>
-                  <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-2">
-                    {campaign.offerDetails || campaign.title}
-                  </p>
-
-                  {/* 포인트 */}
-                  {campaign.pointReward > 0 && (
-                    <span className="inline-block text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                      {campaign.pointReward.toLocaleString()} P
-                    </span>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
+          {campaigns.map((campaign) => (
+            <CampaignCard key={campaign.id} campaign={campaign} />
+          ))}
         </div>
       )}
 

@@ -35,7 +35,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // role, grade, onboarded는 User 모델 확장 필드라 별도 조회 필요
       // 하지만 캐싱으로 DB 부하 줄임
       const cacheKey = `user_session_${user.id}`;
-      const cached = (globalThis as Record<string, unknown>)[cacheKey] as { data: { role: string; grade: string; onboarded: boolean }; ts: number } | undefined;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cached = (globalThis as Record<string, unknown>)[cacheKey] as { data: { role: any; grade: any; onboarded: boolean }; ts: number } | undefined;
       const now = Date.now();
 
       if (cached && now - cached.ts < 60000) {

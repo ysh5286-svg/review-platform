@@ -1,28 +1,46 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import CampaignCard, { CampaignCardData } from "@/components/CampaignCard";
 import StartButton from "@/components/StartButton";
 
+interface HomepageData {
+  premium: CampaignCardData[];
+  deadline: CampaignCardData[];
+  newest: CampaignCardData[];
+}
+
 export default function HomePage() {
+  const [data, setData] = useState<HomepageData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/campaigns/homepage")
+      .then((r) => r.json())
+      .then((d) => setData(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div>
-      {/* Hero Section */}
+      {/* Hero Section - 간결하게 */}
       <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-orange-500/10"></div>
-        <div className="max-w-7xl mx-auto px-4 py-20 sm:py-28 relative">
+        <div className="max-w-7xl mx-auto px-4 py-10 sm:py-14 relative">
           <div className="text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold mb-6">
-              체험단 매칭,
-              <br />
+            <h1 className="text-3xl sm:text-4xl font-bold mb-3">
+              체험단 매칭,{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">더 쉽고 빠르게</span>
             </h1>
-            <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
-              네이버 블로그, 인스타그램, 유튜브 쇼츠, 틱톡까지.
-              <br />
-              사장님은 체험단을 모집하고, 리뷰어는 포인트를 적립하세요.
+            <p className="text-sm sm:text-base text-gray-300 mb-6 max-w-xl mx-auto">
+              네이버 블로그, 인스타그램, 유튜브 쇼츠, 틱톡까지. 지금 바로 시작하세요.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex gap-3 justify-center">
               <Link
                 href="/campaigns"
-                className="px-8 py-3.5 bg-white text-gray-900 font-semibold rounded-xl hover:bg-gray-100 hover:scale-105 hover:shadow-lg active:scale-95 transition-all duration-200 cursor-pointer"
+                className="px-6 py-2.5 bg-white text-gray-900 font-semibold rounded-xl text-sm hover:bg-gray-100 hover:scale-105 active:scale-95 transition-all duration-200"
               >
                 캠페인 둘러보기
               </Link>
@@ -32,100 +50,37 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Platform Section */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-2xl font-bold text-center mb-12">
-          다양한 플랫폼 지원
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {[
-            { icon: "📝", title: "네이버 블로그", desc: "블로그 리뷰를 통한 검색 노출과 매장 홍보" },
-            { icon: "📸", title: "인스타그램", desc: "피드 게시물과 릴스를 통한 SNS 바이럴 마케팅" },
-            { icon: "🎬", title: "숏폼 영상", desc: "유튜브 쇼츠, 틱톡을 통한 영상 콘텐츠 마케팅" },
-          ].map((item) => (
-            <div key={item.title} className="bg-white rounded-2xl p-6 shadow-sm border text-center hover:shadow-xl hover:-translate-y-2 hover:border-red-200 transition-all duration-300 cursor-pointer">
-              <div className="text-4xl mb-4">{item.icon}</div>
-              <h3 className="font-bold text-lg mb-2">{item.title}</h3>
-              <p className="text-gray-500 text-sm">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="bg-white py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-12">이용 방법</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div>
-              <h3 className="text-lg font-bold text-red-500 mb-6">
-                🏪 사장님 (광고주)
-              </h3>
-              <div className="space-y-4">
-                {[
-                  "캠페인 등록 (업체 정보, 제공 내용, 리뷰 조건)",
-                  "체험단 신청자 확인 및 선정",
-                  "리뷰 제출 확인 및 승인",
-                  "자동으로 포인트 지급 완료",
-                ].map((step, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-sm font-bold">
-                      {i + 1}
-                    </span>
-                    <span className="text-gray-700">{step}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-green-600 mb-6">
-                ✍️ 체험단 (리뷰어)
-              </h3>
-              <div className="space-y-4">
-                {[
-                  "마음에 드는 캠페인에 신청",
-                  "선정 후 체험 및 리뷰 작성",
-                  "리뷰 URL 제출",
-                  "승인 후 포인트 적립 → 출금",
-                ].map((step, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-bold">
-                      {i + 1}
-                    </span>
-                    <span className="text-gray-700">{step}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-2xl font-bold text-center mb-12">핵심 기능</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { icon: "🏆", title: "리뷰어 랭킹", desc: "실적 기반 순위표", link: "/leaderboard" },
-            { icon: "💬", title: "1:1 메시지", desc: "광고주↔리뷰어 소통", link: "/messages" },
-            { icon: "📊", title: "리뷰 통계", desc: "캠페인 성과 분석", link: "/advertiser/stats" },
-            { icon: "⭐", title: "리뷰어 평가", desc: "별점으로 신뢰 구축", link: "/leaderboard" },
-            { icon: "🎯", title: "맞춤 추천", desc: "AI 기반 캠페인 추천", link: "/campaigns/recommended" },
-            { icon: "📱", title: "모바일 앱", desc: "PWA 지원", link: "/campaigns" },
-            { icon: "💰", title: "포인트 시스템", desc: "적립·출금·충전", link: "/reviewer/points" },
-            { icon: "📋", title: "포트폴리오", desc: "리뷰 실적 모아보기", link: "/leaderboard" },
-          ].map((item) => (
-            <Link key={item.title} href={item.link} className="bg-white rounded-xl p-5 border shadow-sm text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-              <div className="text-3xl mb-3">{item.icon}</div>
-              <h3 className="font-bold text-sm mb-1">{item.title}</h3>
-              <p className="text-xs text-gray-500">{item.desc}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* 캠페인 섹션 */}
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
+        {loading ? (
+          <>
+            <SkeletonSection title="프리미엄 체험단" />
+            <SkeletonSection title="마감 임박 체험단" />
+            <SkeletonSection title="신규 체험단" />
+          </>
+        ) : (
+          <>
+            <CampaignSection
+              title="🏆 프리미엄 체험단"
+              campaigns={data?.premium || []}
+              moreLink="/campaigns?sort=popular"
+            />
+            <CampaignSection
+              title="⏰ 마감 임박 체험단"
+              campaigns={data?.deadline || []}
+              moreLink="/campaigns?sort=deadline"
+            />
+            <CampaignSection
+              title="✨ 신규 체험단"
+              campaigns={data?.newest || []}
+              moreLink="/campaigns?sort=latest"
+            />
+          </>
+        )}
+      </div>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-10">
+      <footer className="bg-gray-900 text-gray-400 py-10 mt-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -167,5 +122,66 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+/* ===== 캠페인 섹션 컴포넌트 ===== */
+function CampaignSection({
+  title,
+  campaigns,
+  moreLink,
+}: {
+  title: string;
+  campaigns: CampaignCardData[];
+  moreLink: string;
+}) {
+  if (campaigns.length === 0) return null;
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h2>
+        <Link
+          href={moreLink}
+          className="text-sm text-red-500 hover:text-red-600 font-medium transition-colors"
+        >
+          더보기 →
+        </Link>
+      </div>
+
+      {/* 모바일: 가로 스크롤 / 데스크톱: 그리드 */}
+      <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0 scrollbar-hide">
+        {campaigns.map((campaign) => (
+          <div key={campaign.id} className="min-w-[200px] sm:min-w-[220px] snap-start lg:min-w-0">
+            <CampaignCard campaign={campaign} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ===== 스켈레톤 섹션 ===== */
+function SkeletonSection({ title }: { title: string }) {
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h2>
+      </div>
+      <div className="flex gap-4 overflow-x-auto pb-2 lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="min-w-[200px] sm:min-w-[220px] lg:min-w-0">
+            <div className="bg-white rounded-xl border overflow-hidden animate-pulse">
+              <div className="aspect-[4/3] bg-gray-200" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 bg-gray-200 rounded w-2/3" />
+                <div className="h-3 bg-gray-200 rounded w-full" />
+                <div className="h-3 bg-gray-200 rounded w-1/3" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

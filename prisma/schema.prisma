@@ -123,8 +123,11 @@ enum Platform {
 
 enum ContentType {
   BLOG_REVIEW
+  BLOG_CLIP
+  CLIP
   INSTAGRAM_POST
   INSTAGRAM_REEL
+  YOUTUBE
   YOUTUBE_SHORTS
   TIKTOK
 }
@@ -148,9 +151,24 @@ model Campaign {
 
   businessName    String
   businessAddress String?
+  addressDetail   String?
   offerDetails    String
   requirements    String?
   pointReward     Int          @default(0)
+
+  promotionType      String?
+  productUrl         String?
+  contactPhone       String?
+  availableDays      String?
+  availableTimeStart String?
+  availableTimeEnd   String?
+  is24Hours          Boolean    @default(false)
+  sameDayReservation Boolean?
+  reservationNote    String?
+  missionText        String?
+  keyword1           String?
+  keyword2           String?
+  keyword3           String?
 
   maxReviewers Int
   startDate    DateTime

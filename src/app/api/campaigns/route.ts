@@ -153,20 +153,42 @@ export async function POST(request: NextRequest) {
       title,
       description,
       category,
-      platform,
+      platform: platformFromBody,
       contentType,
       imageUrl,
       businessName,
       businessAddress,
+      addressDetail,
       offerDetails,
       requirements,
       pointReward,
       maxReviewers,
       startDate,
       endDate,
+      promotionType,
+      productUrl,
+      contactPhone,
+      availableDays,
+      availableTimeStart,
+      availableTimeEnd,
+      is24Hours,
+      sameDayReservation,
+      reservationNote,
+      missionText,
+      keyword1,
+      keyword2,
+      keyword3,
     } = body;
 
-    if (!title || !description || !category || !platform || !contentType || !businessName || !offerDetails || !maxReviewers || !startDate || !endDate) {
+    // contentType → platform 자동 매핑
+    function getPlatform(ct: string): string {
+      if (["BLOG_REVIEW", "BLOG_CLIP", "CLIP"].includes(ct)) return "NAVER_BLOG";
+      if (["INSTAGRAM_POST", "INSTAGRAM_REEL"].includes(ct)) return "INSTAGRAM";
+      return "SHORT_FORM";
+    }
+    const platform = platformFromBody || getPlatform(contentType);
+
+    if (!category || !contentType || !businessName || !offerDetails || !maxReviewers || !startDate || !endDate) {
       return NextResponse.json(
         { error: "필수 항목을 모두 입력해주세요." },
         { status: 400 }
@@ -175,14 +197,15 @@ export async function POST(request: NextRequest) {
 
     const campaign = await prisma.campaign.create({
       data: {
-        title,
-        description,
+        title: title || businessName,
+        description: description || offerDetails,
         category,
-        platform,
+        platform: platform as "NAVER_BLOG" | "INSTAGRAM" | "SHORT_FORM",
         contentType,
         imageUrl,
         businessName,
         businessAddress,
+        addressDetail: addressDetail || undefined,
         offerDetails,
         requirements,
         pointReward: pointReward ?? 0,
@@ -190,6 +213,19 @@ export async function POST(request: NextRequest) {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         advertiserId: session.user.id,
+        promotionType: promotionType || undefined,
+        productUrl: productUrl || undefined,
+        contactPhone: contactPhone || undefined,
+        availableDays: availableDays || undefined,
+        availableTimeStart: availableTimeStart || undefined,
+        availableTimeEnd: availableTimeEnd || undefined,
+        is24Hours: is24Hours ?? false,
+        sameDayReservation: sameDayReservation ?? undefined,
+        reservationNote: reservationNote || undefined,
+        missionText: missionText || undefined,
+        keyword1: keyword1 || undefined,
+        keyword2: keyword2 || undefined,
+        keyword3: keyword3 || undefined,
       },
       include: {
         advertiser: {
