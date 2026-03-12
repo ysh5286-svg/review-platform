@@ -1,8 +1,49 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LoginPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      // 온보딩 안 된 사용자 → 온보딩
+      if (!session.user.onboarded) {
+        router.replace("/auth/onboarding");
+        return;
+      }
+      // 역할별 대시보드로 리다이렉트
+      if (session.user.role === "ADVERTISER") {
+        router.replace("/advertiser/campaigns");
+      } else if (session.user.role === "ADMIN") {
+        router.replace("/admin");
+      } else {
+        router.replace("/reviewer/applications");
+      }
+    }
+  }, [session, status, router]);
+
+  // 로딩 중
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-gray-400">로딩 중...</div>
+      </div>
+    );
+  }
+
+  // 이미 로그인 → 리다이렉트 중
+  if (status === "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-gray-400">리다이렉트 중...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full mx-4">

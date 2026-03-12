@@ -1,4 +1,5 @@
 import Link from "next/link";
+import StartButton from "@/components/StartButton";
 
 export default function HomePage() {
   return (
@@ -25,12 +26,7 @@ export default function HomePage() {
               >
                 캠페인 둘러보기
               </Link>
-              <Link
-                href="/auth/login"
-                className="px-8 py-3.5 bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold rounded-xl hover:from-red-600 hover:to-orange-600 hover:scale-105 hover:shadow-lg hover:shadow-red-500/30 active:scale-95 transition-all duration-200 cursor-pointer"
-              >
-                무료로 시작하기
-              </Link>
+              <StartButton />
             </div>
           </div>
         </div>
