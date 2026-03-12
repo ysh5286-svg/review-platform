@@ -20,7 +20,7 @@ interface Review {
   reviewUrl: string;
   status: string;
   createdAt: string;
-  reviewer: { name: string | null; email: string | null };
+  reviewer: { id: string; name: string | null; email: string | null };
 }
 
 interface Campaign {
@@ -186,7 +186,15 @@ export default function AdvertiserCampaignDetailPage() {
                   <tr key={app.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <div>
-                        <p className="font-medium text-gray-900">{app.reviewer.name || "이름 없음"}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900">{app.reviewer.name || "이름 없음"}</p>
+                          <Link
+                            href={`/messages?partner=${app.reviewer.id}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-medium rounded-full hover:bg-blue-100 transition-colors"
+                          >
+                            💬 메시지
+                          </Link>
+                        </div>
                         <p className="text-xs text-gray-400">{app.reviewer.email}</p>
                         {app.reviewer.blogUrl && (
                           <p className="text-xs text-green-600">블로그: {app.reviewer.blogUrl}</p>
@@ -257,7 +265,17 @@ export default function AdvertiserCampaignDetailPage() {
                 {reviews.map((review) => (
                   <tr key={review.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{review.reviewer.name || "이름 없음"}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900">{review.reviewer.name || "이름 없음"}</p>
+                        {review.reviewer.id && (
+                          <Link
+                            href={`/messages?partner=${review.reviewer.id}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-medium rounded-full hover:bg-blue-100 transition-colors"
+                          >
+                            💬 메시지
+                          </Link>
+                        )}
+                      </div>
                       <p className="text-xs text-gray-400">{review.reviewer.email}</p>
                     </td>
                     <td className="px-4 py-3">

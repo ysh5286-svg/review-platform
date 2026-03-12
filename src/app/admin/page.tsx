@@ -11,7 +11,7 @@ export default async function AdminDashboardPage() {
       prisma.campaign.count(),
       prisma.campaign.count({ where: { status: { in: ["RECRUITING", "IN_PROGRESS"] } } }),
       prisma.withdrawal.count({ where: { status: "PENDING" } }),
-      prisma.pointCharge.count({ where: { status: "PENDING" } }),
+      prisma.pointCharge.count({ where: { status: "PENDING" } }).catch(() => 0),
     ]);
 
   const stats = [

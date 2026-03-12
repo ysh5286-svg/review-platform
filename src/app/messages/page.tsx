@@ -49,7 +49,24 @@ function MessagesContent() {
   useEffect(() => {
     fetch("/api/messages")
       .then((r) => r.json())
-      .then((data) => setConversations(Array.isArray(data) ? data : []))
+      .then(async (data) => {
+        const convs: Conversation[] = Array.isArray(data) ? data : [];
+        setConversations(convs);
+
+        // If initialPartner is set but not in conversations, fetch partner info
+        if (initialPartner && !convs.find((c) => c.partner.id === initialPartner)) {
+          try {
+            const res = await fetch(`/api/users/${initialPartner}`);
+            if (res.ok) {
+              const partner = await res.json();
+              setConversations((prev) => [
+                { partner, lastMessage: null, unreadCount: 0 },
+                ...prev,
+              ]);
+            }
+          } catch {}
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
