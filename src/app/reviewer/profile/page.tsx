@@ -202,9 +202,10 @@ export default function ReviewerProfilePage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 pb-24">
       {/* 프로필 헤더 카드 */}
-      <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-6 text-white mb-4 shadow-lg relative overflow-hidden">
+      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-6 text-white mb-4 shadow-lg relative overflow-hidden">
         {/* 배경 장식 */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
+        <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-orange-500/10" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-8 translate-x-8" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-8 -translate-x-8" />
 
         <div className="relative flex items-center gap-4">
@@ -244,7 +245,7 @@ export default function ReviewerProfilePage() {
             </div>
             <p className="text-sm text-white/70 truncate">{profile.email}</p>
             <div className="flex items-center gap-2 mt-2">
-              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm`}>
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-300 backdrop-blur-sm border border-red-500/30">
                 {GRADE_LABELS[profile.grade]} 등급
               </span>
               {profile.avgRating > 0 && (
@@ -257,7 +258,7 @@ export default function ReviewerProfilePage() {
         </div>
 
         {/* 활동 통계 */}
-        <div className="relative grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-white/20">
+        <div className="relative grid grid-cols-4 gap-2 mt-5 pt-4 border-t border-white/10">
           <div className="text-center">
             <p className="text-xl font-bold">{profile._count.applications}</p>
             <p className="text-[10px] text-white/60 mt-0.5">총 신청</p>
