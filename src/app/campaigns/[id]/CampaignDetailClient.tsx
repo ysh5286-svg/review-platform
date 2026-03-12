@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import NaverMap from "@/components/NaverMap";
 
 /* ===== 타입 ===== */
 interface CampaignData {
@@ -406,14 +407,9 @@ export default function CampaignDetailClient({
           {campaign.businessAddress && (
             <div className="py-3 border-b">
               <span className="text-sm font-semibold text-gray-900 block mb-3">방문 정보</span>
-              {/* 지도 (카카오맵 임베드 - 깔끔한 지도만 표시) */}
-              <div className="rounded-xl overflow-hidden border mb-3 bg-gray-100" style={{ aspectRatio: "4/3", maxHeight: 320 }}>
-                <iframe
-                  src={`https://map.kakao.com/?q=${encodeURIComponent(campaign.businessAddress)}`}
-                  className="w-full h-full border-0"
-                  loading="lazy"
-                  title="지도"
-                />
+              {/* 네이버 지도 */}
+              <div className="mb-3">
+                <NaverMap address={campaign.businessAddress} />
               </div>
               {/* 방문 주소 */}
               <div className="flex items-start gap-3">
