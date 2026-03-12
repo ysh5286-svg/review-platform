@@ -1,0 +1,276 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============ NextAuth 관련 테이블 ============
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============ 사용자 ============
+
+enum Role {
+  REVIEWER
+  ADVERTISER
+  ADMIN
+}
+
+enum ReviewerGrade {
+  BEGINNER
+  STANDARD
+  PREMIUM
+  VIP
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  phone         String?
+  role          Role?
+  grade         ReviewerGrade @default(BEGINNER)
+  onboarded     Boolean   @default(false)
+
+  // 리뷰어 SNS 계정
+  blogUrl     String?
+  instagramId String?
+  youtubeUrl  String?
+  tiktokId    String?
+
+  // 광고주 사업체 정보
+  businessName     String?
+  businessCategory String?
+
+  // 출금 계좌 정보
+  bankName      String?
+  bankAccount   String?
+  accountHolder String?
+
+  // 포인트
+  points Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  campaigns    Campaign[]
+  applications Application[]
+  reviews      Review[]
+  pointHistory PointHistory[]
+  withdrawals   Withdrawal[]
+  notifications Notification[]
+}
+
+// ============ 캠페인 ============
+
+enum Platform {
+  NAVER_BLOG
+  INSTAGRAM
+  SHORT_FORM
+}
+
+enum ContentType {
+  BLOG_REVIEW
+  INSTAGRAM_POST
+  INSTAGRAM_REEL
+  YOUTUBE_SHORTS
+  TIKTOK
+}
+
+enum CampaignStatus {
+  RECRUITING
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
+}
+
+model Campaign {
+  id          String         @id @default(cuid())
+  title       String
+  description String
+  category    String
+  platform    Platform
+  contentType ContentType
+  imageUrl    String?
+
+  businessName    String
+  businessAddress String?
+  offerDetails    String
+  requirements    String?
+  pointReward     Int          @default(0)
+
+  maxReviewers Int
+  startDate    DateTime
+  endDate      DateTime
+  status       CampaignStatus @default(RECRUITING)
+
+  advertiserId String
+  advertiser   User   @relation(fields: [advertiserId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+}
+
+// ============ 신청 ============
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model Application {
+  id         String            @id @default(cuid())
+  campaignId String
+  reviewerId String
+  message    String?
+  status     ApplicationStatus @default(PENDING)
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  reviewer User     @relation(fields: [reviewerId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  review Review?
+
+  @@unique([campaignId, reviewerId])
+}
+
+// ============ 리뷰 ============
+
+enum ReviewStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model Review {
+  id            String       @id @default(cuid())
+  applicationId String       @unique
+  reviewerId    String
+  reviewUrl     String
+  status        ReviewStatus @default(SUBMITTED)
+  pointsAwarded Int          @default(0)
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reviewer    User        @relation(fields: [reviewerId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  rankChecks SearchRankCheck[]
+}
+
+// ============ 상위노출 체크 ============
+
+model SearchRankCheck {
+  id        String   @id @default(cuid())
+  reviewId  String
+  keyword   String
+  rank      Int?     // 검색 순위 (null이면 미노출)
+  isTop     Boolean  @default(false) // 상위노출 여부 (1~5위)
+  checkedAt DateTime @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+}
+
+// ============ 포인트 ============
+
+enum PointType {
+  EARN
+  WITHDRAW
+}
+
+model PointHistory {
+  id           String    @id @default(cuid())
+  userId       String
+  amount       Int
+  type         PointType
+  description  String
+  balanceAfter Int
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ============ 출금 ============
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Withdrawal {
+  id            String           @id @default(cuid())
+  userId        String
+  amount        Int
+  bankName      String
+  bankAccount   String
+  accountHolder String
+  status        WithdrawalStatus @default(PENDING)
+  adminNote     String?
+  processedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// ============ 알림 ============
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
