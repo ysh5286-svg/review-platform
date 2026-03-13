@@ -166,7 +166,15 @@ export default function AdminCampaignsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">캠페인 관리</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">캠페인 관리</h1>
+        <Link
+          href="/advertiser/campaigns/new"
+          className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+        >
+          + 새 캠페인 등록
+        </Link>
+      </div>
 
       {/* 필터/검색 */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">

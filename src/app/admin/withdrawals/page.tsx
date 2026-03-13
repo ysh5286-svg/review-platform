@@ -24,8 +24,6 @@ const WD_STATUS: Record<string, { label: string; className: string }> = {
   REJECTED: { label: "거절", className: "bg-red-100 text-red-700" },
 };
 
-const FEE = 500;
-const TAX_RATE = 0.033;
 const DEPOSIT_LABEL = "다즐피플"; // 입금통장표시
 
 export default function AdminWithdrawalsPage() {
@@ -34,9 +32,12 @@ export default function AdminWithdrawalsPage() {
   const [loading, setLoading] = useState(true);
   const [rejectNote, setRejectNote] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<string>("ALL");
-  const [settlementDay1, setSettlementDay1] = useState("5");
-  const [settlementDay2, setSettlementDay2] = useState("20");
+  const [fee, setFee] = useState(500);
+  const [taxRate, setTaxRate] = useState(0.033);
+  const [settlementDay1, setSettlementDay1] = useState(5);
+  const [settlementDay2, setSettlementDay2] = useState(20);
   const [showSettings, setShowSettings] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
 
@@ -46,7 +47,34 @@ export default function AdminWithdrawalsPage() {
       .then((data) => setWithdrawals(Array.isArray(data) ? data : []))
       .catch(() => {})
       .finally(() => setLoading(false));
+    // 설정 불러오기
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((s) => {
+        if (s.withdrawalFee !== undefined) setFee(s.withdrawalFee);
+        if (s.taxRate !== undefined) setTaxRate(s.taxRate);
+        if (s.settlementDay1 !== undefined) setSettlementDay1(s.settlementDay1);
+        if (s.settlementDay2 !== undefined) setSettlementDay2(s.settlementDay2);
+      })
+      .catch(() => {});
   }, []);
+
+  async function saveSettings() {
+    setSavingSettings(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ withdrawalFee: fee, taxRate, settlementDay1, settlementDay2 }),
+      });
+      if (res.ok) alert("설정이 저장되었습니다.");
+      else alert("설정 저장에 실패했습니다.");
+    } catch {
+      alert("설정 저장 중 오류가 발생했습니다.");
+    } finally {
+      setSavingSettings(false);
+    }
+  }
 
   async function handleAction(id: string, status: "APPROVED" | "REJECTED") {
     try {
@@ -129,7 +157,7 @@ export default function AdminWithdrawalsPage() {
     const BOM = "\uFEFF";
     const header = "입금은행,계좌번호,입금액,예금주,입금통장표시\n";
     const rows = pendingOrApproved.map((w) => {
-      const net = w.netAmount || w.amount - Math.floor(w.amount * TAX_RATE) - FEE;
+      const net = w.netAmount || w.amount - Math.floor(w.amount * taxRate) - fee;
       return `${w.bankName},${w.bankAccount},${net},${w.accountHolder},${DEPOSIT_LABEL}`;
     }).join("\n");
 
@@ -149,7 +177,7 @@ export default function AdminWithdrawalsPage() {
     pending: withdrawals.filter((w) => w.status === "PENDING").length,
     approved: withdrawals.filter((w) => w.status === "APPROVED").length,
     rejected: withdrawals.filter((w) => w.status === "REJECTED").length,
-    pendingAmount: withdrawals.filter((w) => w.status === "PENDING").reduce((s, w) => s + (w.netAmount || w.amount - Math.floor(w.amount * TAX_RATE) - FEE), 0),
+    pendingAmount: withdrawals.filter((w) => w.status === "PENDING").reduce((s, w) => s + (w.netAmount || w.amount - Math.floor(w.amount * taxRate) - fee), 0),
   };
 
   return (
@@ -172,10 +200,44 @@ export default function AdminWithdrawalsPage() {
         </div>
       </div>
 
-      {/* 정산 일정 설정 */}
+      {/* 정산 설정 */}
       {showSettings && (
         <div className="bg-white rounded-xl border shadow-sm p-6 mb-6">
-          <h2 className="font-bold text-gray-900 mb-4">정산 일정 설정</h2>
+          <h2 className="font-bold text-gray-900 mb-4">정산 설정</h2>
+
+          {/* 수수료/세율 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">출금 수수료</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={fee}
+                  onChange={(e) => setFee(Number(e.target.value))}
+                  min={0}
+                  className="w-28 px-3 py-2 border rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <span className="text-sm text-gray-500">원</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">소득세율</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={(taxRate * 100).toFixed(1)}
+                  onChange={(e) => setTaxRate(Number(e.target.value) / 100)}
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  className="w-28 px-3 py-2 border rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+                <span className="text-sm text-gray-500">%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 정산일 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">1차 정산일 (1~15일 신청분)</label>
@@ -184,7 +246,7 @@ export default function AdminWithdrawalsPage() {
                 <input
                   type="number"
                   value={settlementDay1}
-                  onChange={(e) => setSettlementDay1(e.target.value)}
+                  onChange={(e) => setSettlementDay1(Number(e.target.value))}
                   min={1}
                   max={28}
                   className="w-20 px-3 py-2 border rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -199,7 +261,7 @@ export default function AdminWithdrawalsPage() {
                 <input
                   type="number"
                   value={settlementDay2}
-                  onChange={(e) => setSettlementDay2(e.target.value)}
+                  onChange={(e) => setSettlementDay2(Number(e.target.value))}
                   min={1}
                   max={28}
                   className="w-20 px-3 py-2 border rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -208,10 +270,20 @@ export default function AdminWithdrawalsPage() {
               </div>
             </div>
           </div>
+
           <div className="mt-4 p-3 bg-sky-50 rounded-lg">
             <p className="text-sm text-sky-700">
-              현재 정산 일정: 1~15일 신청 → 당월 <strong>{settlementDay1}일</strong> 정산 / 16~말일 신청 → 익월 <strong>{settlementDay2}일</strong> 정산
+              수수료 <strong>{fee.toLocaleString()}원</strong> · 소득세 <strong>{(taxRate * 100).toFixed(1)}%</strong> · 1~15일 신청 → 당월 <strong>{settlementDay1}일</strong> / 16~말일 신청 → 익월 <strong>{settlementDay2}일</strong>
             </p>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={saveSettings}
+              disabled={savingSettings}
+              className="px-6 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              {savingSettings ? "저장중..." : "설정 저장"}
+            </button>
           </div>
         </div>
       )}
@@ -321,8 +393,8 @@ export default function AdminWithdrawalsPage() {
                 </thead>
                 <tbody className="divide-y">
                   {filtered.map((wd) => {
-                    const tax = wd.tax || Math.floor(wd.amount * TAX_RATE);
-                    const net = wd.netAmount || wd.amount - tax - FEE;
+                    const tax = wd.tax || Math.floor(wd.amount * taxRate);
+                    const net = wd.netAmount || wd.amount - tax - fee;
                     return (
                       <tr key={wd.id} className={`hover:bg-gray-50 ${selectedIds.has(wd.id) ? "bg-sky-50" : ""}`}>
                         <td className="px-3 py-3">
@@ -348,7 +420,7 @@ export default function AdminWithdrawalsPage() {
                         <td className="px-4 py-3 text-gray-700 font-mono text-xs">{wd.bankAccount}</td>
                         <td className="px-4 py-3 text-gray-700">{wd.accountHolder}</td>
                         <td className="px-4 py-3 text-right text-gray-900">{wd.amount.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right text-red-500 text-xs">-{FEE.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right text-red-500 text-xs">-{fee.toLocaleString()}</td>
                         <td className="px-4 py-3 text-right text-red-500 text-xs">-{tax.toLocaleString()}</td>
                         <td className="px-4 py-3 text-right font-bold text-green-600">{net.toLocaleString()}</td>
                         <td className="px-4 py-3 text-center">

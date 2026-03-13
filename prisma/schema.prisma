@@ -382,6 +382,17 @@ model PointCharge {
   processedAt DateTime?
 }
 
+// ============ 사이트 설정 ============
+
+model SiteSettings {
+  id             String  @id @default("default")
+  withdrawalFee  Int     @default(500)     // 출금 수수료 (원)
+  taxRate        Float   @default(0.033)   // 소득세율 (3.3%)
+  settlementDay1 Int     @default(5)       // 1차 정산일
+  settlementDay2 Int     @default(20)      // 2차 정산일
+  updatedAt      DateTime @updatedAt
+}
+
 // ============ 매장 평가 (리뷰어 → 광고주) ============
 
 model StoreRating {

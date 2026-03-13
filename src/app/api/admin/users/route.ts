@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +17,12 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const roleFilter = new URL(request.url).searchParams.get("role");
+  const where: Record<string, unknown> = {};
+  if (roleFilter) where.role = roleFilter;
+
   const users = await prisma.user.findMany({
+    where,
     select: {
       id: true,
       name: true,

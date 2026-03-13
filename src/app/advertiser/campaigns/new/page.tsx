@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -122,6 +123,8 @@ function toDateStr(date: Date): string {
 
 export default function NewCampaignPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(initialForm);
   const [loading, setLoading] = useState(false);
@@ -129,13 +132,22 @@ export default function NewCampaignPage() {
   const [uploading, setUploading] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedAdvertiserId, setSelectedAdvertiserId] = useState("");
+  const [advertisers, setAdvertisers] = useState<{ id: string; name: string | null; email: string | null; businessName: string | null }[]>([]);
 
   useEffect(() => {
-    fetch("/api/advertiser/profile")
-      .then((r) => r.json())
-      .then((d) => setUserPoints(d.points || 0))
-      .catch(() => {});
-  }, []);
+    if (isAdmin) {
+      fetch("/api/admin/users?role=ADVERTISER")
+        .then((r) => r.json())
+        .then((data) => setAdvertisers(Array.isArray(data) ? data : []))
+        .catch(() => {});
+    } else {
+      fetch("/api/advertiser/profile")
+        .then((r) => r.json())
+        .then((d) => setUserPoints(d.points || 0))
+        .catch(() => {});
+    }
+  }, [isAdmin]);
 
   function updateForm(updates: Partial<FormData>) {
     setForm((prev) => ({ ...prev, ...updates }));
@@ -226,10 +238,11 @@ export default function NewCampaignPage() {
           keyword1: form.keyword1 || undefined,
           keyword2: form.keyword2 || undefined,
           keyword3: form.keyword3 || undefined,
+          ...(isAdmin && selectedAdvertiserId ? { advertiserId: selectedAdvertiserId } : {}),
         }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "캠페인 등록 실패"); }
-      router.push("/advertiser/campaigns");
+      router.push(isAdmin ? "/admin/campaigns" : "/advertiser/campaigns");
     } catch (err) {
       setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
     } finally { setLoading(false); }
@@ -265,6 +278,25 @@ export default function NewCampaignPage() {
         {/* ===== Step 1 ===== */}
         {step === 1 && (
           <div className="space-y-6">
+            {/* 관리자: 광고주 선택 */}
+            {isAdmin && (
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-1">광고주 선택</label>
+                <p className="text-xs text-gray-400 mb-2">캠페인을 등록할 광고주를 선택하세요. 미선택 시 관리자 본인 명의로 등록됩니다.</p>
+                <select
+                  value={selectedAdvertiserId}
+                  onChange={(e) => setSelectedAdvertiserId(e.target.value)}
+                  className="w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">관리자 본인 명의로 등록</option>
+                  {advertisers.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name || "이름없음"} ({a.email}) {a.businessName ? `- ${a.businessName}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-bold text-gray-800 mb-1">상호명</label>
               <p className="text-xs text-gray-400 mb-2">방문형/포장형의 경우 네이버 플레이스에 등록되어 있는 업체명으로 입력해 주세요</p>

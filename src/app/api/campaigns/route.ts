@@ -141,9 +141,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
     }
-    if (session.user.role !== "ADVERTISER") {
+    if (session.user.role !== "ADVERTISER" && session.user.role !== "ADMIN") {
       return NextResponse.json(
-        { error: "광고주만 캠페인을 생성할 수 있습니다." },
+        { error: "광고주 또는 관리자만 캠페인을 생성할 수 있습니다." },
         { status: 403 }
       );
     }
@@ -180,6 +180,7 @@ export async function POST(request: NextRequest) {
       keyword3,
       selectionDate,
       reviewDeadline,
+      advertiserId: bodyAdvertiserId,
     } = body;
 
     // contentType → platform 자동 매핑
@@ -216,7 +217,7 @@ export async function POST(request: NextRequest) {
         endDate: new Date(endDate),
         selectionDate: selectionDate ? new Date(selectionDate) : undefined,
         reviewDeadline: reviewDeadline ? new Date(reviewDeadline) : undefined,
-        advertiserId: session.user.id,
+        advertiserId: (session.user.role === "ADMIN" && bodyAdvertiserId) ? bodyAdvertiserId : session.user.id,
         promotionType: promotionType || undefined,
         productUrl: productUrl || undefined,
         contactPhone: contactPhone || undefined,
