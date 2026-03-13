@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 interface Campaign {
@@ -9,19 +10,21 @@ interface Campaign {
   campaignNumber: number;
   title: string;
   platform: string;
+  contentType: string;
   status: string;
   maxReviewers: number;
   pointReward: number;
   startDate: string;
   endDate: string;
+  thumbnailUrl: string | null;
   _count: { applications: number };
 }
 
 const STATUS_MAP: Record<string, { label: string; className: string }> = {
-  RECRUITING: { label: "모집중", className: "bg-red-100 text-red-600" },
-  IN_PROGRESS: { label: "진행중", className: "bg-yellow-100 text-yellow-700" },
-  COMPLETED: { label: "완료", className: "bg-gray-100 text-gray-500" },
-  CLOSED: { label: "마감", className: "bg-gray-100 text-gray-500" },
+  RECRUITING: { label: "모집중", className: "bg-red-500 text-white" },
+  IN_PROGRESS: { label: "진행중", className: "bg-yellow-500 text-white" },
+  COMPLETED: { label: "완료", className: "bg-gray-400 text-white" },
+  CLOSED: { label: "마감", className: "bg-gray-400 text-white" },
 };
 
 const PLATFORM_MAP: Record<string, string> = {
@@ -34,6 +37,7 @@ export default function AdvertiserCampaignsPage() {
   const { data: session } = useSession();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>("ALL");
 
   useEffect(() => {
     fetch("/api/advertiser/campaigns")
@@ -42,6 +46,15 @@ export default function AdvertiserCampaignsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const filtered = filter === "ALL" ? campaigns : campaigns.filter((c) => c.status === filter);
+
+  const getDday = (endDate: string) => {
+    const diff = Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (diff < 0) return "마감";
+    if (diff === 0) return "D-Day";
+    return `D-${diff}`;
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -53,6 +66,29 @@ export default function AdvertiserCampaignsPage() {
         >
           새 캠페인 등록
         </Link>
+      </div>
+
+      {/* 필터 탭 */}
+      <div className="flex gap-2 mb-6">
+        {[
+          { key: "ALL", label: "전체" },
+          { key: "RECRUITING", label: "모집중" },
+          { key: "IN_PROGRESS", label: "진행중" },
+          { key: "COMPLETED", label: "완료" },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setFilter(tab.key)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              filter === tab.key
+                ? "bg-red-500 text-white"
+                : "bg-white text-gray-600 border hover:bg-gray-50"
+            }`}
+          >
+            {tab.label}
+            {tab.key === "ALL" ? ` ${campaigns.length}` : ` ${campaigns.filter((c) => c.status === tab.key).length}`}
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -67,60 +103,84 @@ export default function AdvertiserCampaignsPage() {
             첫 캠페인을 등록해보세요
           </Link>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-xl border">
+          <p className="text-gray-400">해당 상태의 캠페인이 없습니다.</p>
+        </div>
       ) : (
-        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-center px-3 py-3 font-medium text-gray-500 w-16">번호</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">캠페인명</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500">플랫폼</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500">상태</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-500">신청자</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">포인트</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">기간</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {campaigns.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-3 text-center">
-                    <span className="text-xs font-bold text-gray-500">#{c.campaignNumber}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/advertiser/campaigns/${c.id}`}
-                      className="text-red-500 font-medium hover:underline"
-                    >
-                      {c.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {PLATFORM_MAP[c.platform] || c.platform}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        STATUS_MAP[c.status]?.className || "bg-gray-100"
-                      }`}
-                    >
-                      {STATUS_MAP[c.status]?.label || c.status}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filtered.map((c) => {
+            const status = STATUS_MAP[c.status] || { label: c.status, className: "bg-gray-400 text-white" };
+            const dday = getDday(c.endDate);
+
+            return (
+              <Link
+                key={c.id}
+                href={`/advertiser/campaigns/${c.id}`}
+                className="bg-white rounded-xl border shadow-sm overflow-hidden hover:shadow-md transition-shadow group"
+              >
+                {/* 썸네일 */}
+                <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+                  {c.thumbnailUrl ? (
+                    <Image
+                      src={c.thumbnailUrl}
+                      alt={c.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* 상태 뱃지 */}
+                  <div className="absolute top-2 left-2 flex gap-1.5">
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${status.className}`}>
+                      {status.label}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-center text-gray-600">
-                    {c._count.applications}/{c.maxReviewers}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-600">
-                    {c.pointReward.toLocaleString()}P
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-400 text-xs">
-                    {new Date(c.startDate).toLocaleDateString("ko-KR")} ~{" "}
-                    {new Date(c.endDate).toLocaleDateString("ko-KR")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {c.status === "RECRUITING" && dday !== "마감" && (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-black/60 text-white">
+                        {dday}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 신청자 수 */}
+                  <div className="absolute bottom-2 right-2">
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-black/50 text-white">
+                      {c._count.applications}/{c.maxReviewers}명
+                    </span>
+                  </div>
+                </div>
+
+                {/* 정보 */}
+                <div className="p-3">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[11px] text-gray-400">#{c.campaignNumber}</span>
+                    <span className="text-[11px] text-red-400 font-medium">
+                      {PLATFORM_MAP[c.platform] || c.platform}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug mb-2">
+                    {c.title}
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">
+                      ~{new Date(c.endDate).toLocaleDateString("ko-KR", { month: "short", day: "numeric" })}
+                    </span>
+                    {c.pointReward > 0 && (
+                      <span className="text-xs font-bold text-red-500">
+                        {c.pointReward.toLocaleString()}P
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
