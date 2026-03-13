@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import Header from "@/components/Header";
 import InstallBanner from "@/components/InstallBanner";
+import KakaoChat from "@/components/KakaoChat";
 import Script from "next/script";
 
 const geistSans = Geist({
@@ -53,6 +54,7 @@ export default function RootLayout({
           <Header />
           <main>{children}</main>
           <InstallBanner />
+          <KakaoChat />
         </Providers>
         <Script
           id="external-browser-redirect"
