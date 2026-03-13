@@ -1,5 +1,14 @@
 import { prisma } from "./prisma";
 
+/** 알림 실패가 메인 비즈니스 로직에 영향을 주지 않도록 래핑 */
+export async function safeNotify(fn: () => Promise<unknown>) {
+  try {
+    await fn();
+  } catch (e) {
+    console.error("[Notification Error]", e);
+  }
+}
+
 export async function createNotification(params: {
   userId: string;
   type: string;

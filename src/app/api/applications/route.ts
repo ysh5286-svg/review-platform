@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { notifyApplicationReceived } from "@/lib/notification";
+import { notifyApplicationReceived, safeNotify } from "@/lib/notification";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -88,11 +88,13 @@ export async function POST(request: Request) {
   });
 
   // 광고주에게 신청 알림
-  await notifyApplicationReceived(
-    campaign.advertiserId,
-    campaign.title,
-    session.user.name || "리뷰어",
-    campaign.id
+  await safeNotify(() =>
+    notifyApplicationReceived(
+      campaign.advertiserId,
+      campaign.title,
+      session.user.name || "리뷰어",
+      campaign.id
+    )
   );
 
   return NextResponse.json(application, { status: 201 });

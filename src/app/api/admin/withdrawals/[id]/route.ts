@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { WithdrawalStatus } from "@/generated/prisma/client";
-import { notifyWithdrawalProcessed } from "@/lib/notification";
+import { notifyWithdrawalProcessed, safeNotify } from "@/lib/notification";
 
 export async function PATCH(
   request: NextRequest,
@@ -81,7 +81,7 @@ export async function PATCH(
       ]);
 
       // 출금 거절 알림
-      await notifyWithdrawalProcessed(withdrawal.userId, withdrawal.amount, false);
+      await safeNotify(() => notifyWithdrawalProcessed(withdrawal.userId, withdrawal.amount, false));
 
       return NextResponse.json(updatedWithdrawal);
     }
@@ -97,7 +97,7 @@ export async function PATCH(
     });
 
     // 출금 승인 알림
-    await notifyWithdrawalProcessed(withdrawal.userId, withdrawal.amount, true);
+    await safeNotify(() => notifyWithdrawalProcessed(withdrawal.userId, withdrawal.amount, true));
 
     return NextResponse.json(updatedWithdrawal);
   } catch (error) {

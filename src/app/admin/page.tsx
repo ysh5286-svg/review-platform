@@ -5,14 +5,25 @@ import AdminCharts from "@/components/AdminCharts";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const [totalUsers, totalCampaigns, activeCampaigns, pendingWithdrawals, pendingCharges] =
-    await Promise.all([
-      prisma.user.count(),
-      prisma.campaign.count(),
-      prisma.campaign.count({ where: { status: { in: ["RECRUITING", "IN_PROGRESS"] } } }),
-      prisma.withdrawal.count({ where: { status: "PENDING" } }),
-      prisma.pointCharge.count({ where: { status: "PENDING" } }).catch(() => 0),
-    ]);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  const [
+    totalUsers, totalCampaigns, activeCampaigns, pendingWithdrawals, pendingCharges,
+    todayApplications, weekReviews, todayUsers,
+  ] = await Promise.all([
+    prisma.user.count(),
+    prisma.campaign.count(),
+    prisma.campaign.count({ where: { status: { in: ["RECRUITING", "IN_PROGRESS"] } } }),
+    prisma.withdrawal.count({ where: { status: "PENDING" } }),
+    prisma.pointCharge.count({ where: { status: "PENDING" } }).catch(() => 0),
+    prisma.application.count({ where: { createdAt: { gte: todayStart } } }),
+    prisma.review.count({ where: { createdAt: { gte: weekStart } } }),
+    prisma.user.count({ where: { createdAt: { gte: todayStart } } }),
+  ]);
 
   const stats = [
     {
@@ -47,6 +58,12 @@ export default async function AdminDashboardPage() {
     },
   ];
 
+  const todayStats = [
+    { label: "오늘 신규 신청", value: todayApplications, color: "bg-orange-50 text-orange-600" },
+    { label: "이번 주 리뷰", value: weekReviews, color: "bg-purple-50 text-purple-600" },
+    { label: "오늘 신규 가입", value: todayUsers, color: "bg-teal-50 text-teal-600" },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">관리자 대시보드</h1>
@@ -61,6 +78,19 @@ export default async function AdminDashboardPage() {
             <p className="text-sm font-medium opacity-75 mb-1">{stat.label}</p>
             <p className="text-3xl font-bold">{stat.value.toLocaleString()}</p>
           </Link>
+        ))}
+      </div>
+
+      {/* 오늘/이번주 통계 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        {todayStats.map((stat) => (
+          <div
+            key={stat.label}
+            className={`${stat.color} rounded-xl p-5`}
+          >
+            <p className="text-sm font-medium opacity-75 mb-1">{stat.label}</p>
+            <p className="text-2xl font-bold">{stat.value.toLocaleString()}</p>
+          </div>
         ))}
       </div>
 

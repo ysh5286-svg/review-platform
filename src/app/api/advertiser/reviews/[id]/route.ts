@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { calculateGrade } from "@/lib/grade";
-import { notifyReviewApproved, notifyReviewRejected } from "@/lib/notification";
+import { notifyReviewApproved, notifyReviewRejected, safeNotify } from "@/lib/notification";
 
 export async function PATCH(
   request: Request,
@@ -88,7 +88,7 @@ export async function PATCH(
     });
 
     // 리뷰 승인 알림
-    await notifyReviewApproved(review.reviewerId, review.application.campaign.title, pointReward);
+    await safeNotify(() => notifyReviewApproved(review.reviewerId, review.application.campaign.title, pointReward));
 
     return NextResponse.json({ success: true });
   }
@@ -99,7 +99,7 @@ export async function PATCH(
   });
 
   // 리뷰 반려 알림
-  await notifyReviewRejected(review.reviewerId, review.application.campaign.title);
+  await safeNotify(() => notifyReviewRejected(review.reviewerId, review.application.campaign.title));
 
   return NextResponse.json(updated);
 }

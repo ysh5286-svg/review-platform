@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { notifySelected, notifyRejected } from "@/lib/notification";
+import { notifySelected, notifyRejected, safeNotify } from "@/lib/notification";
 
 export async function PATCH(
   request: Request,
@@ -35,9 +35,9 @@ export async function PATCH(
 
   // 알림 발송
   if (status === "ACCEPTED") {
-    await notifySelected(application.reviewerId, application.campaign.title, application.campaign.id);
+    await safeNotify(() => notifySelected(application.reviewerId, application.campaign.title, application.campaign.id));
   } else {
-    await notifyRejected(application.reviewerId, application.campaign.title);
+    await safeNotify(() => notifyRejected(application.reviewerId, application.campaign.title));
   }
 
   return NextResponse.json(updated);
