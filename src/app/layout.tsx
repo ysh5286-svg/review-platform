@@ -52,6 +52,25 @@ export default function RootLayout({
           <main>{children}</main>
         </Providers>
         <Script
+          id="kakao-external-browser"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var ua = navigator.userAgent || '';
+                if (ua.match(/KAKAOTALK/i)) {
+                  var url = location.href;
+                  if (/android/i.test(ua)) {
+                    location.href = 'intent://' + url.replace(/https?:\\/\\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+                  } else if (/iphone|ipad|ipod/i.test(ua)) {
+                    location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
+                  }
+                }
+              })();
+            `,
+          }}
+        />
+        <Script
           id="sw-register"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
