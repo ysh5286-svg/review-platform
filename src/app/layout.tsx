@@ -75,11 +75,12 @@ export default function RootLayout({
                   if (isAndroid) {
                     location.href = 'intent://' + url.replace(/https?:\\/\\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
                   } else if (isIOS) {
-                    // iOS 인스타에서는 window.open으로 사파리 열기
-                    window.location.href = url + (url.indexOf('?') !== -1 ? '&' : '?') + '_open_external=true';
-                    setTimeout(function() {
-                      document.querySelector('body').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;padding:20px;text-align:center;"><div><p style="font-size:18px;font-weight:bold;margin-bottom:12px;">사파리에서 열기</p><p style="color:#666;margin-bottom:20px;">더 나은 경험을 위해 사파리에서 열어주세요</p><a href="' + url + '" target="_blank" style="display:inline-block;padding:14px 28px;background:#ef4444;color:white;border-radius:12px;text-decoration:none;font-weight:bold;">사파리로 열기</a></div></div>';
-                    }, 100);
+                    // iOS 인스타 → "앱을 나갑니다" 다이얼로그 후 사파리로 열기
+                    var a = document.createElement('a');
+                    a.href = 'x-safari-' + url;
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
                   }
                 }
               })();
