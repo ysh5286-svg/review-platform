@@ -83,35 +83,45 @@ export default function LoginPage() {
               </span>
             </button>
 
-            <button
-              onClick={() => signIn("kakao", { callbackUrl: "/" })}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#FEE500] rounded-xl hover:bg-[#FDD835] hover:shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="#000000"
-                  d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24l-1.12 4.16a.37.37 0 0 0 .56.4l4.72-3.12c.48.06.96.1 1.46.1 5.52 0 10-3.36 10-7.5S17.52 3 12 3z"
-                />
-              </svg>
-              <span className="text-sm font-medium text-gray-900">
-                카카오로 시작하기
-              </span>
-            </button>
+            <div className="relative">
+              <div className="absolute inset-0 bg-white/70 rounded-xl z-10 flex items-center justify-center backdrop-blur-[1px]">
+                <span className="text-sm font-medium text-gray-500">준비중입니다</span>
+              </div>
+              <button
+                disabled
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#FEE500] rounded-xl transition-all duration-200 cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    fill="#000000"
+                    d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24l-1.12 4.16a.37.37 0 0 0 .56.4l4.72-3.12c.48.06.96.1 1.46.1 5.52 0 10-3.36 10-7.5S17.52 3 12 3z"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-gray-900">
+                  카카오로 시작하기
+                </span>
+              </button>
+            </div>
 
-            <button
-              onClick={() => signIn("naver", { callbackUrl: "/" })}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#03C75A] rounded-xl hover:bg-[#02b351] hover:shadow-md active:scale-[0.98] transition-all duration-200 cursor-pointer"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="#FFFFFF"
-                  d="M16.27 12.97L7.44 3H3v18h4.73V11.03L16.56 21H21V3h-4.73z"
-                />
-              </svg>
-              <span className="text-sm font-medium text-white">
-                네이버로 시작하기
-              </span>
-            </button>
+            <div className="relative">
+              <div className="absolute inset-0 bg-white/70 rounded-xl z-10 flex items-center justify-center backdrop-blur-[1px]">
+                <span className="text-sm font-medium text-gray-500">준비중입니다</span>
+              </div>
+              <button
+                disabled
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#03C75A] rounded-xl transition-all duration-200 cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    fill="#FFFFFF"
+                    d="M16.27 12.97L7.44 3H3v18h4.73V11.03L16.56 21H21V3h-4.73z"
+                  />
+                </svg>
+                <span className="text-sm font-medium text-white">
+                  네이버로 시작하기
+                </span>
+              </button>
+            </div>
           </div>
 
           <p className="mt-6 text-center text-xs text-gray-400">
