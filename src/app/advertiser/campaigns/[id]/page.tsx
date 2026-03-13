@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import RankCheckButton from "@/components/RankCheckButton";
@@ -34,6 +34,11 @@ interface ReviewerStats {
   tagCounts: Record<string, number>;
 }
 
+interface MarkInfo {
+  favorite: boolean;
+  blacklist: boolean;
+}
+
 interface Application {
   id: string;
   message: string | null;
@@ -41,7 +46,14 @@ interface Application {
   createdAt: string;
   reviewer: ReviewerInfo;
   reviewerStats: ReviewerStats;
+  marks: MarkInfo;
   review?: Review | null;
+}
+
+interface AdditionalReviewer {
+  reviewer: ReviewerInfo;
+  reviewerStats: ReviewerStats;
+  marks: MarkInfo;
 }
 
 interface Review {
@@ -133,8 +145,9 @@ export default function AdvertiserCampaignDetailPage() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [additionalReviewers, setAdditionalReviewers] = useState<AdditionalReviewer[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [tab, setTab] = useState<"applications" | "reviews">("applications");
+  const [tab, setTab] = useState<"applications" | "additional" | "reviews">("applications");
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [profileModal, setProfileModal] = useState<Application | null>(null);
@@ -143,17 +156,20 @@ export default function AdvertiserCampaignDetailPage() {
   const [ratingTags, setRatingTags] = useState<string[]>([]);
   const [ratingComment, setRatingComment] = useState("");
   const [ratingLoading, setRatingLoading] = useState(false);
+  const [messagePopover, setMessagePopover] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/advertiser/campaigns/${campaignId}`).then((r) => r.json()),
       fetch(`/api/advertiser/campaigns/${campaignId}/applications`).then((r) => r.json()),
       fetch(`/api/advertiser/campaigns/${campaignId}/reviews`).then((r) => r.json()),
+      fetch(`/api/advertiser/campaigns/${campaignId}/additional-reviewers`).then((r) => r.json()),
     ])
-      .then(([c, a, r]) => {
+      .then(([c, a, r, ar]) => {
         setCampaign(c);
         setApplications(Array.isArray(a) ? a : []);
         setReviews(Array.isArray(r) ? r : []);
+        setAdditionalReviewers(Array.isArray(ar) ? ar : []);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -205,14 +221,102 @@ export default function AdvertiserCampaignDetailPage() {
     }
   }
 
+  async function toggleMark(reviewerId: string, type: "FAVORITE" | "BLACKLIST") {
+    try {
+      const res = await fetch("/api/advertiser/reviewer-marks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewerId, type }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Update applications
+        setApplications((prev) =>
+          prev.map((a) => {
+            if (a.reviewer.id !== reviewerId) return a;
+            return {
+              ...a,
+              marks: {
+                ...a.marks,
+                [type === "FAVORITE" ? "favorite" : "blacklist"]: data.marked,
+              },
+            };
+          })
+        );
+        // Update additional reviewers
+        setAdditionalReviewers((prev) =>
+          prev.map((ar) => {
+            if (ar.reviewer.id !== reviewerId) return ar;
+            return {
+              ...ar,
+              marks: {
+                ...ar.marks,
+                [type === "FAVORITE" ? "favorite" : "blacklist"]: data.marked,
+              },
+            };
+          })
+        );
+      }
+    } catch {}
+  }
+
+  async function handleAdditionalSelect(reviewerId: string) {
+    try {
+      const res = await fetch(`/api/advertiser/campaigns/${campaignId}/additional-reviewers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewerId }),
+      });
+      if (res.ok) {
+        // Remove from additional list
+        setAdditionalReviewers((prev) => prev.filter((ar) => ar.reviewer.id !== reviewerId));
+        // Refresh applications
+        const appsRes = await fetch(`/api/advertiser/campaigns/${campaignId}/applications`);
+        if (appsRes.ok) {
+          const apps = await appsRes.json();
+          setApplications(Array.isArray(apps) ? apps : []);
+        }
+      }
+    } catch {}
+  }
+
+  function downloadCSV() {
+    const rows = filteredApps.map((app, idx) => {
+      const r = app.reviewer;
+      const s = app.reviewerStats;
+      const name = r.nickname || r.name || "";
+      const reviewDate = app.review?.createdAt ? new Date(app.review.createdAt).toLocaleDateString("ko-KR") : "";
+      return [
+        idx + 1,
+        name,
+        GRADE_LABELS[r.grade] || r.grade,
+        r.phone || "",
+        r.blogUrl || "",
+        s.approvedReviews,
+        s.rejectedApplications,
+        s.avgRating > 0 ? s.avgRating.toFixed(1) : "",
+        APP_STATUS[app.status]?.label || app.status,
+        reviewDate,
+      ].join(",");
+    });
+
+    const header = "번호,이름,등급,연락처,블로그URL,협찬완료,취소횟수,평가,상태,리뷰등록일";
+    const csv = "\uFEFF" + header + "\n" + rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `influencer_list_${campaignId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (loading) return <div className="max-w-7xl mx-auto px-4 py-16 text-center text-gray-400">로딩중...</div>;
   if (!campaign) return <div className="max-w-7xl mx-auto px-4 py-16 text-center text-gray-400">캠페인을 찾을 수 없습니다.</div>;
 
   const filteredApps = statusFilter ? applications.filter((a) => a.status === statusFilter) : applications;
   const pendingCount = applications.filter((a) => a.status === "PENDING").length;
   const acceptedCount = applications.filter((a) => a.status === "ACCEPTED").length;
-
-  // 현재 캠페인 상태에 따른 스텝 인덱스
   const currentStepIdx = STATUS_STEPS.findIndex((s) => s.key === campaign.status);
 
   return (
@@ -270,15 +374,18 @@ export default function AdvertiserCampaignDetailPage() {
         <button onClick={() => setTab("applications")} className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${tab === "applications" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
           인플루언서 목록 ({applications.length})
         </button>
+        <button onClick={() => setTab("additional")} className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${tab === "additional" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+          추가 선정 ({additionalReviewers.length})
+        </button>
         <button onClick={() => setTab("reviews")} className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${tab === "reviews" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
           제출된 리뷰 ({reviews.length})
         </button>
       </div>
 
-      {/* ===== 신청자 테이블 탭 ===== */}
+      {/* ===== 인플루언서 목록 탭 ===== */}
       {tab === "applications" && (
         <div>
-          {/* 필터 + 인원 */}
+          {/* 필터 + 인원 + 다운로드 */}
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               {[
@@ -296,9 +403,15 @@ export default function AdvertiserCampaignDetailPage() {
                 </button>
               ))}
             </div>
-            <span className="text-sm text-gray-500">
-              선정인원 / 가능인원 : <b>{acceptedCount}/{campaign.maxReviewers}</b>
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-500">
+                선정인원 / 가능인원 : <b>{acceptedCount}/{campaign.maxReviewers}</b>
+              </span>
+              <button onClick={downloadCSV} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-blue-300 transition-colors cursor-pointer flex items-center gap-1">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                다운로드
+              </button>
+            </div>
           </div>
 
           {/* 테이블 */}
@@ -309,16 +422,20 @@ export default function AdvertiserCampaignDetailPage() {
               <table className="w-full text-sm whitespace-nowrap">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="text-center px-3 py-3 font-medium text-gray-500 w-12">번호</th>
-                    <th className="text-left px-3 py-3 font-medium text-gray-500">이름</th>
-                    <th className="text-center px-3 py-3 font-medium text-gray-500">등급</th>
-                    <th className="text-center px-3 py-3 font-medium text-gray-500">협찬완료</th>
-                    <th className="text-center px-3 py-3 font-medium text-gray-500">취소횟수</th>
-                    <th className="text-center px-3 py-3 font-medium text-gray-500">SNS</th>
-                    <th className="text-center px-3 py-3 font-medium text-gray-500">평가</th>
-                    <th className="text-center px-3 py-3 font-medium text-gray-500">상태</th>
-                    <th className="text-center px-3 py-3 font-medium text-gray-500">리뷰등록일</th>
-                    <th className="text-center px-3 py-3 font-medium text-gray-500">액션</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500 w-10">번호</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">계정URL</th>
+                    <th className="text-left px-2 py-3 font-medium text-gray-500">이름</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">블로그 지수</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">일 방문</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">연락처</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">링크주소</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">평가</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">리뷰등록일</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">순위체크</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">신청메시지</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">관심</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">블랙</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">상태</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -327,59 +444,193 @@ export default function AdvertiserCampaignDetailPage() {
                     const s = app.reviewerStats;
                     const name = r.nickname || r.name || "이름 없음";
                     const reviewDate = app.review?.createdAt ? new Date(app.review.createdAt).toLocaleDateString("ko-KR") : "-";
+                    const snsUrl = r.blogUrl || (r.instagramId ? `https://instagram.com/${r.instagramId}` : null) || r.youtubeUrl || (r.tiktokId ? `https://tiktok.com/@${r.tiktokId}` : null);
 
                     return (
-                      <tr key={app.id} className="hover:bg-blue-50/30 transition-colors">
-                        <td className="text-center px-3 py-3 text-gray-400">{idx + 1}</td>
-                        <td className="px-3 py-3">
+                      <tr key={app.id} className={`hover:bg-blue-50/30 transition-colors ${app.marks?.blacklist ? "opacity-50" : ""}`}>
+                        <td className="text-center px-2 py-3 text-gray-400 text-xs">{idx + 1}</td>
+                        {/* 계정URL */}
+                        <td className="text-center px-2 py-3">
+                          {snsUrl ? (
+                            <a href={snsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
+                              <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            </a>
+                          ) : (
+                            <span className="text-gray-300">-</span>
+                          )}
+                        </td>
+                        {/* 이름 */}
+                        <td className="px-2 py-3">
                           <button onClick={() => setProfileModal(app)} className="text-blue-600 hover:underline font-medium cursor-pointer text-left">
                             {name}
                           </button>
                         </td>
-                        <td className="text-center px-3 py-3">
+                        {/* 블로그 지수 */}
+                        <td className="text-center px-2 py-3">
                           <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${GRADE_COLORS[r.grade] || "bg-gray-100 text-gray-600"}`}>
                             {GRADE_LABELS[r.grade]}
                           </span>
                         </td>
-                        <td className="text-center px-3 py-3 font-medium">{s.approvedReviews}</td>
-                        <td className="text-center px-3 py-3">
-                          <span className={s.rejectedApplications > 2 ? "text-red-500 font-bold" : ""}>{s.rejectedApplications}</span>
+                        {/* 일 방문 */}
+                        <td className="text-center px-2 py-3 text-xs text-gray-400">-</td>
+                        {/* 연락처 */}
+                        <td className="text-center px-2 py-3 text-xs text-gray-600">{r.phone || "-"}</td>
+                        {/* 링크주소 */}
+                        <td className="text-center px-2 py-3">
+                          {app.review?.reviewUrl ? (
+                            <a href={app.review.reviewUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
+                              <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                            </a>
+                          ) : (
+                            <span className="text-gray-300">-</span>
+                          )}
                         </td>
-                        <td className="text-center px-3 py-3">
-                          <div className="flex items-center justify-center gap-1">
-                            {r.blogUrl && <span className="text-green-600 text-xs" title="블로그">{"📝"}</span>}
-                            {r.instagramId && <span className="text-pink-600 text-xs" title="인스타">{"📸"}</span>}
-                            {r.youtubeUrl && <span className="text-red-600 text-xs" title="유튜브">{"🎬"}</span>}
-                            {r.tiktokId && <span className="text-gray-600 text-xs" title="틱톡">{"🎵"}</span>}
-                          </div>
-                        </td>
-                        <td className="text-center px-3 py-3">
+                        {/* 평가 */}
+                        <td className="text-center px-2 py-3">
                           <RatingTooltip stats={s} />
                         </td>
-                        <td className="text-center px-3 py-3">
-                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${APP_STATUS[app.status]?.className || "bg-gray-100"}`}>
-                            {APP_STATUS[app.status]?.label || app.status}
-                          </span>
+                        {/* 리뷰등록일 */}
+                        <td className="text-center px-2 py-3 text-xs text-gray-400">{reviewDate}</td>
+                        {/* 순위체크 */}
+                        <td className="text-center px-2 py-3">
+                          {app.review?.status === "APPROVED" ? (
+                            <RankCheckButton reviewId={app.review.id} />
+                          ) : (
+                            <span className="text-gray-300 text-xs">-</span>
+                          )}
                         </td>
-                        <td className="text-center px-3 py-3 text-xs text-gray-400">{reviewDate}</td>
-                        <td className="text-center px-3 py-3">
+                        {/* 신청메시지 */}
+                        <td className="text-center px-2 py-3">
+                          {app.message ? (
+                            <MessagePopover message={app.message} />
+                          ) : (
+                            <span className="text-gray-300 text-xs">-</span>
+                          )}
+                        </td>
+                        {/* 관심 */}
+                        <td className="text-center px-2 py-3">
+                          <button onClick={() => toggleMark(r.id, "FAVORITE")} className="cursor-pointer text-lg hover:scale-110 transition-transform">
+                            {app.marks?.favorite ? <span className="text-red-500">&#9829;</span> : <span className="text-gray-300">&#9825;</span>}
+                          </button>
+                        </td>
+                        {/* 블랙 */}
+                        <td className="text-center px-2 py-3">
+                          <button onClick={() => toggleMark(r.id, "BLACKLIST")} className="cursor-pointer hover:scale-110 transition-transform">
+                            {app.marks?.blacklist ? (
+                              <svg className="w-4 h-4 inline text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8 0-1.85.63-3.55 1.69-4.9L16.9 18.31A7.902 7.902 0 0112 20zm6.31-3.1L7.1 5.69A7.902 7.902 0 0112 4c4.42 0 8 3.58 8 8 0 1.85-.63 3.55-1.69 4.9z" /></svg>
+                            ) : (
+                              <svg className="w-4 h-4 inline text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                            )}
+                          </button>
+                        </td>
+                        {/* 상태/액션 */}
+                        <td className="text-center px-2 py-3">
                           {app.status === "PENDING" ? (
                             <div className="flex gap-1 justify-center">
-                              <button onClick={() => handleAppAction(app.id, "ACCEPTED")} className="px-2.5 py-1 bg-blue-500 text-white text-[11px] rounded hover:bg-blue-600 cursor-pointer">선정</button>
-                              <button onClick={() => handleAppAction(app.id, "REJECTED")} className="px-2.5 py-1 bg-gray-200 text-gray-600 text-[11px] rounded hover:bg-gray-300 cursor-pointer">미선정</button>
+                              <button onClick={() => handleAppAction(app.id, "ACCEPTED")} className="px-2 py-1 bg-blue-500 text-white text-[11px] rounded hover:bg-blue-600 cursor-pointer">선정</button>
+                              <button onClick={() => handleAppAction(app.id, "REJECTED")} className="px-2 py-1 bg-gray-200 text-gray-600 text-[11px] rounded hover:bg-gray-300 cursor-pointer">미선정</button>
                             </div>
                           ) : app.review?.status === "APPROVED" ? (
                             <button
                               onClick={() => setRatingModal({ reviewId: app.review!.id, reviewerId: r.id })}
-                              className="px-2.5 py-1 bg-yellow-100 text-yellow-700 text-[11px] rounded hover:bg-yellow-200 cursor-pointer"
+                              className="px-2 py-1 bg-yellow-100 text-yellow-700 text-[11px] rounded hover:bg-yellow-200 cursor-pointer"
                             >
                               {"⭐"} 평가
                             </button>
                           ) : (
-                            <Link href={`/messages?partner=${r.id}`} className="px-2.5 py-1 bg-blue-50 text-blue-600 text-[11px] rounded hover:bg-blue-100 inline-block">
-                              {"💬"}
-                            </Link>
+                            <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${APP_STATUS[app.status]?.className || "bg-gray-100"}`}>
+                              {APP_STATUS[app.status]?.label || app.status}
+                            </span>
                           )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ===== 추가 선정 탭 ===== */}
+      {tab === "additional" && (
+        <div>
+          <div className="mb-3">
+            <span className="text-sm text-gray-500">캠페인에 신청하지 않은 리뷰어 중 추가 선정할 수 있는 후보 목록입니다.</span>
+          </div>
+          <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
+            {additionalReviewers.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">추가 선정 가능한 리뷰어가 없습니다.</div>
+            ) : (
+              <table className="w-full text-sm whitespace-nowrap">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500 w-10">번호</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">계정URL</th>
+                    <th className="text-left px-2 py-3 font-medium text-gray-500">이름</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">선정</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">블로그 지수</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">일 방문</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">취소횟수</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">평가</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">관심</th>
+                    <th className="text-center px-2 py-3 font-medium text-gray-500">블랙</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {additionalReviewers.map((ar, idx) => {
+                    const r = ar.reviewer;
+                    const s = ar.reviewerStats;
+                    const name = r.nickname || r.name || "이름 없음";
+                    const snsUrl = r.blogUrl || (r.instagramId ? `https://instagram.com/${r.instagramId}` : null) || r.youtubeUrl || (r.tiktokId ? `https://tiktok.com/@${r.tiktokId}` : null);
+
+                    return (
+                      <tr key={r.id} className={`hover:bg-blue-50/30 transition-colors ${ar.marks?.blacklist ? "opacity-50" : ""}`}>
+                        <td className="text-center px-2 py-3 text-gray-400 text-xs">{idx + 1}</td>
+                        <td className="text-center px-2 py-3">
+                          {snsUrl ? (
+                            <a href={snsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700">
+                              <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            </a>
+                          ) : (
+                            <span className="text-gray-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-2 py-3 font-medium text-gray-700">{name}</td>
+                        <td className="text-center px-2 py-3">
+                          <button
+                            onClick={() => handleAdditionalSelect(r.id)}
+                            className="px-3 py-1 bg-green-500 text-white text-[11px] rounded hover:bg-green-600 cursor-pointer font-medium"
+                          >
+                            선정하기
+                          </button>
+                        </td>
+                        <td className="text-center px-2 py-3">
+                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${GRADE_COLORS[r.grade] || "bg-gray-100 text-gray-600"}`}>
+                            {GRADE_LABELS[r.grade]}
+                          </span>
+                        </td>
+                        <td className="text-center px-2 py-3 text-xs text-gray-400">-</td>
+                        <td className="text-center px-2 py-3">
+                          <span className={s.rejectedApplications > 2 ? "text-red-500 font-bold text-xs" : "text-xs"}>{s.rejectedApplications}</span>
+                        </td>
+                        <td className="text-center px-2 py-3">
+                          <RatingTooltip stats={s} />
+                        </td>
+                        <td className="text-center px-2 py-3">
+                          <button onClick={() => toggleMark(r.id, "FAVORITE")} className="cursor-pointer text-lg hover:scale-110 transition-transform">
+                            {ar.marks?.favorite ? <span className="text-red-500">&#9829;</span> : <span className="text-gray-300">&#9825;</span>}
+                          </button>
+                        </td>
+                        <td className="text-center px-2 py-3">
+                          <button onClick={() => toggleMark(r.id, "BLACKLIST")} className="cursor-pointer hover:scale-110 transition-transform">
+                            {ar.marks?.blacklist ? (
+                              <svg className="w-4 h-4 inline text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8 0-1.85.63-3.55 1.69-4.9L16.9 18.31A7.902 7.902 0 0112 20zm6.31-3.1L7.1 5.69A7.902 7.902 0 0112 4c4.42 0 8 3.58 8 8 0 1.85-.63 3.55-1.69 4.9z" /></svg>
+                            ) : (
+                              <svg className="w-4 h-4 inline text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                            )}
+                          </button>
                         </td>
                       </tr>
                     );
@@ -450,7 +701,6 @@ export default function AdvertiserCampaignDetailPage() {
             <div className="mt-6 bg-white rounded-xl border shadow-sm p-5">
               <h3 className="text-sm font-bold text-gray-900 mb-4">리뷰어 피드백</h3>
 
-              {/* 태그 집계 */}
               {(() => {
                 const tagCounts: Record<string, number> = {};
                 const feedbacks: string[] = [];
@@ -518,7 +768,6 @@ export default function AdvertiserCampaignDetailPage() {
           <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-4">리뷰어 평가</h3>
 
-            {/* 별점 */}
             <div className="flex items-center gap-1 mb-4">
               {[1,2,3,4,5].map((v) => (
                 <button key={v} onClick={() => setRatingValue(v)} className="text-2xl cursor-pointer">
@@ -528,7 +777,6 @@ export default function AdvertiserCampaignDetailPage() {
               <span className="text-sm text-gray-500 ml-2">{ratingValue}점</span>
             </div>
 
-            {/* 평가 태그 */}
             <p className="text-sm font-medium text-gray-700 mb-2">평가 항목 (최대 3개 선택)</p>
             <div className="grid grid-cols-1 gap-2 mb-4">
               {RATING_TAGS.map((tag) => {
@@ -553,7 +801,6 @@ export default function AdvertiserCampaignDetailPage() {
               })}
             </div>
 
-            {/* 코멘트 */}
             <textarea
               value={ratingComment}
               onChange={(e) => setRatingComment(e.target.value)}
@@ -575,11 +822,40 @@ export default function AdvertiserCampaignDetailPage() {
   );
 }
 
+/* ===== 신청메시지 팝오버 ===== */
+function MessagePopover({ message }: { message: string }) {
+  const [show, setShow] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!show) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setShow(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [show]);
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      <button onClick={() => setShow(!show)} className="cursor-pointer text-gray-400 hover:text-blue-500 transition-colors">
+        <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+      </button>
+      {show && (
+        <div className="absolute z-40 bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-white rounded-xl shadow-xl border p-3">
+          <p className="text-xs text-gray-500 mb-1 font-medium">신청 메시지</p>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap">{message}</p>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b rotate-45 -mt-1.5" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ===== 평가 툴팁 (별 호버) ===== */
 function RatingTooltip({ stats }: { stats: ReviewerStats }) {
   const [show, setShow] = useState(false);
   const hasRating = stats.ratingCount > 0;
-  const hasTagData = Object.keys(stats.tagCounts).length > 0;
 
   return (
     <div className="relative inline-block" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
@@ -597,7 +873,7 @@ function RatingTooltip({ stats }: { stats: ReviewerStats }) {
             <span className="text-xs font-bold text-gray-700">평가</span>
             <span className="text-xs text-gray-400">{stats.ratingCount}명</span>
           </div>
-          {hasTagData ? (
+          {Object.keys(stats.tagCounts).length > 0 ? (
             <div className="space-y-1.5">
               {RATING_TAGS.map((tag) => {
                 const count = stats.tagCounts[tag.key] || 0;
@@ -614,7 +890,6 @@ function RatingTooltip({ stats }: { stats: ReviewerStats }) {
           ) : (
             <p className="text-xs text-gray-400 text-center py-2">상세 평가 데이터가 없습니다</p>
           )}
-          {/* 삼각형 꼬리 */}
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b rotate-45 -mt-1.5" />
         </div>
       )}
@@ -637,7 +912,6 @@ function ReviewerProfileModal({ app, onClose }: { app: Application; onClose: () 
         </button>
       </div>
 
-      {/* 프로필 헤더 */}
       <div className="flex items-center gap-4 mb-5">
         {r.image ? (
           <img src={r.image} alt="" className="w-16 h-16 rounded-full object-cover" />
@@ -654,10 +928,10 @@ function ReviewerProfileModal({ app, onClose }: { app: Application; onClose: () 
             </span>
           </div>
           <p className="text-sm text-gray-400">{r.email}</p>
+          {r.phone && <p className="text-sm text-gray-500">{r.phone}</p>}
         </div>
       </div>
 
-      {/* 통계 그리드 */}
       <div className="grid grid-cols-4 gap-3 mb-5">
         <div className="bg-gray-50 rounded-lg p-3 text-center">
           <p className="text-lg font-bold text-gray-900">{s.approvedReviews}</p>
@@ -679,7 +953,6 @@ function ReviewerProfileModal({ app, onClose }: { app: Application; onClose: () 
         </div>
       </div>
 
-      {/* SNS 계정 */}
       <div className="mb-5">
         <h4 className="text-sm font-bold text-gray-700 mb-2">SNS</h4>
         <div className="grid grid-cols-2 gap-2">
@@ -690,7 +963,6 @@ function ReviewerProfileModal({ app, onClose }: { app: Application; onClose: () 
         </div>
       </div>
 
-      {/* 평가 태그 요약 */}
       {Object.keys(s.tagCounts).length > 0 && (
         <div className="mb-5">
           <h4 className="text-sm font-bold text-gray-700 mb-2">받은 평가</h4>
@@ -707,7 +979,6 @@ function ReviewerProfileModal({ app, onClose }: { app: Application; onClose: () 
         </div>
       )}
 
-      {/* 신청 메시지 */}
       {app.message && (
         <div className="bg-blue-50 rounded-lg p-3 mb-4">
           <p className="text-xs text-blue-400 mb-1">신청 메시지</p>
@@ -715,7 +986,6 @@ function ReviewerProfileModal({ app, onClose }: { app: Application; onClose: () 
         </div>
       )}
 
-      {/* 포트폴리오 링크 */}
       <Link
         href={`/portfolio/${r.id}`}
         target="_blank"

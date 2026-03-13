@@ -30,6 +30,7 @@ const ADMIN_MENU = [
   { label: "포인트 관리", path: "/admin/points", icon: "💰" },
   { label: "출금 관리", path: "/admin/withdrawals", icon: "🏦" },
   { label: "신고 관리", path: "/admin/reports", icon: "🚨" },
+  { label: "내 프로필", path: "/admin/profile", icon: "👤" },
   { label: "설정", path: "/admin/settings", icon: "⚙️" },
 ];
 

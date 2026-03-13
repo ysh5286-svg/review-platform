@@ -113,6 +113,8 @@ model User {
   receivedRatings  ReviewerRating[] @relation("ReceivedRatings")
   givenStoreRatings StoreRating[]  @relation("GivenStoreRatings")
   pointCharges     PointCharge[]
+  advertiserMarks  AdvertiserReviewerMark[] @relation("AdvertiserMarks")
+  reviewerMarks    AdvertiserReviewerMark[] @relation("ReviewerMarks")
 }
 
 // ============ 캠페인 ============
@@ -410,4 +412,21 @@ model StoreRating {
   createdAt DateTime @default(now())
 
   @@unique([reviewerId, reviewId])
+}
+
+// ============ 광고주-리뷰어 관심/블랙 ============
+
+model AdvertiserReviewerMark {
+  id           String @id @default(cuid())
+  advertiserId String
+  reviewerId   String
+  type         String // "FAVORITE" | "BLACKLIST"
+
+  advertiser User @relation("AdvertiserMarks", fields: [advertiserId], references: [id])
+  reviewer   User @relation("ReviewerMarks", fields: [reviewerId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([advertiserId, reviewerId, type])
+  @@index([advertiserId])
 }

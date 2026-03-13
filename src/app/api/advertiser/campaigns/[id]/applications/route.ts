@@ -32,6 +32,7 @@ export async function GET(
           email: true,
           image: true,
           grade: true,
+          phone: true,
           blogUrl: true,
           instagramId: true,
           youtubeUrl: true,
@@ -55,6 +56,17 @@ export async function GET(
 
   // 각 신청자별 협찬완료(APPROVED 리뷰), 취소횟수(REJECTED 신청) 집계
   const reviewerIds = [...new Set(applications.map((a: { reviewer: { id: string } }) => a.reviewer.id))];
+
+  // 관심/블랙 마크 조회
+  const marks = await prisma.advertiserReviewerMark.findMany({
+    where: { advertiserId: session.user.id, reviewerId: { in: reviewerIds } },
+  });
+  const markMap: Record<string, { favorite: boolean; blacklist: boolean }> = {};
+  marks.forEach((m: { reviewerId: string; type: string }) => {
+    if (!markMap[m.reviewerId]) markMap[m.reviewerId] = { favorite: false, blacklist: false };
+    if (m.type === "FAVORITE") markMap[m.reviewerId].favorite = true;
+    if (m.type === "BLACKLIST") markMap[m.reviewerId].blacklist = true;
+  });
 
   const [approvedCounts, rejectedAppCounts, avgRatings, allRatingTags] = await Promise.all([
     // 협찬 완료 횟수 (APPROVED 리뷰 수)
@@ -100,16 +112,20 @@ export async function GET(
     } catch {}
   });
 
-  const enriched = applications.map((app: Record<string, unknown>) => ({
-    ...app,
-    reviewerStats: {
-      approvedReviews: approvedMap[(app.reviewer as { id: string }).id] || 0,
-      rejectedApplications: rejectedMap[(app.reviewer as { id: string }).id] || 0,
-      avgRating: ratingMap[(app.reviewer as { id: string }).id]?.avg || 0,
-      ratingCount: ratingMap[(app.reviewer as { id: string }).id]?.count || 0,
-      tagCounts: tagCountMap[(app.reviewer as { id: string }).id] || {},
-    },
-  }));
+  const enriched = applications.map((app: Record<string, unknown>) => {
+    const rid = (app.reviewer as { id: string }).id;
+    return {
+      ...app,
+      reviewerStats: {
+        approvedReviews: approvedMap[rid] || 0,
+        rejectedApplications: rejectedMap[rid] || 0,
+        avgRating: ratingMap[rid]?.avg || 0,
+        ratingCount: ratingMap[rid]?.count || 0,
+        tagCounts: tagCountMap[rid] || {},
+      },
+      marks: markMap[rid] || { favorite: false, blacklist: false },
+    };
+  });
 
   return NextResponse.json(enriched);
 }
