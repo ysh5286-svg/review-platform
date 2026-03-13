@@ -41,7 +41,7 @@ export default function PrivacyPage() {
 
         <h2 className="text-lg font-bold">7. 개인정보 보호책임자</h2>
         <p className="text-gray-600">개인정보 관련 문의사항은 아래로 연락 부탁드립니다.</p>
-        <p className="text-gray-600">이메일: privacy@hotplace-review.com</p>
+        <p className="text-gray-600">이메일: dazzlepeople@naver.com</p>
 
         <p className="text-gray-500 text-xs mt-8">시행일: 2026년 1월 1일</p>
       </div>
