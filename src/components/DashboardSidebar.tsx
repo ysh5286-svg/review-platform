@@ -28,6 +28,7 @@ const ADMIN_MENU = [
   { label: "회원 관리", path: "/admin/users", icon: "👥" },
   { label: "캠페인 관리", path: "/admin/campaigns", icon: "📢" },
   { label: "포인트 관리", path: "/admin/points", icon: "💰" },
+  { label: "출금 관리", path: "/admin/withdrawals", icon: "🏦" },
   { label: "신고 관리", path: "/admin/reports", icon: "🚨" },
   { label: "설정", path: "/admin/settings", icon: "⚙️" },
 ];
