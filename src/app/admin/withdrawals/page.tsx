@@ -37,6 +37,8 @@ export default function AdminWithdrawalsPage() {
   const [settlementDay1, setSettlementDay1] = useState("5");
   const [settlementDay2, setSettlementDay2] = useState("20");
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/withdrawals")
@@ -65,6 +67,56 @@ export default function AdminWithdrawalsPage() {
   }
 
   const filtered = filter === "ALL" ? withdrawals : withdrawals.filter((w) => w.status === filter);
+
+  // 일괄 처리
+  const pendingFiltered = filtered.filter((w) => w.status === "PENDING");
+  const allPendingSelected = pendingFiltered.length > 0 && pendingFiltered.every((w) => selectedIds.has(w.id));
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (allPendingSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pendingFiltered.map((w) => w.id)));
+    }
+  }
+
+  async function handleBulkAction(status: "APPROVED" | "REJECTED") {
+    if (selectedIds.size === 0) return;
+    const label = status === "APPROVED" ? "승인" : "거절";
+    if (!confirm(`선택한 ${selectedIds.size}건을 일괄 ${label} 하시겠습니까?`)) return;
+    setBulkProcessing(true);
+    try {
+      const ids = Array.from(selectedIds);
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/admin/withdrawals/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          })
+        )
+      );
+      setWithdrawals((prev) =>
+        prev.map((w) =>
+          selectedIds.has(w.id) ? { ...w, status, processedAt: new Date().toISOString() } : w
+        )
+      );
+      setSelectedIds(new Set());
+    } catch {
+      alert("일괄 처리 중 오류가 발생했습니다.");
+    } finally {
+      setBulkProcessing(false);
+    }
+  }
 
   // 엑셀(CSV) 다운로드 - 입금은행/계좌번호/입금액/예금주/입금통장표시
   function downloadExcel() {
@@ -102,18 +154,18 @@ export default function AdminWithdrawalsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">출금 관리</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">출금 관리</h1>
         <div className="flex gap-2">
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer"
+            className="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer"
           >
-            ⚙️ 정산 일정 설정
+            ⚙️ 정산 설정
           </button>
           <button
             onClick={downloadExcel}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors cursor-pointer"
+            className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-green-700 transition-colors cursor-pointer"
           >
             📥 엑셀 다운로드
           </button>
@@ -124,7 +176,7 @@ export default function AdminWithdrawalsPage() {
       {showSettings && (
         <div className="bg-white rounded-xl border shadow-sm p-6 mb-6">
           <h2 className="font-bold text-gray-900 mb-4">정산 일정 설정</h2>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">1차 정산일 (1~15일 신청분)</label>
               <div className="flex items-center gap-2">
@@ -165,7 +217,7 @@ export default function AdminWithdrawalsPage() {
       )}
 
       {/* 통계 카드 */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="bg-white rounded-xl border p-4">
           <p className="text-sm text-gray-500">전체</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
@@ -186,7 +238,7 @@ export default function AdminWithdrawalsPage() {
       </div>
 
       {/* 필터 */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
         {[
           { key: "ALL", label: "전체" },
           { key: "PENDING", label: "대기중" },
@@ -196,7 +248,7 @@ export default function AdminWithdrawalsPage() {
           <button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer ${
+            className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
               filter === tab.key ? "bg-red-500 text-white" : "bg-white text-gray-600 border hover:bg-gray-50"
             }`}
           >
@@ -204,6 +256,35 @@ export default function AdminWithdrawalsPage() {
           </button>
         ))}
       </div>
+
+      {/* 일괄 처리 바 */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 mb-4 bg-sky-50 border border-sky-200 rounded-xl px-4 py-3">
+          <span className="text-sm font-medium text-sky-800">{selectedIds.size}건 선택됨</span>
+          <div className="flex gap-2 ml-auto">
+            <button
+              onClick={() => handleBulkAction("APPROVED")}
+              disabled={bulkProcessing}
+              className="px-4 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              {bulkProcessing ? "처리중..." : "일괄 승인"}
+            </button>
+            <button
+              onClick={() => handleBulkAction("REJECTED")}
+              disabled={bulkProcessing}
+              className="px-4 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              {bulkProcessing ? "처리중..." : "일괄 거절"}
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="px-4 py-1.5 bg-white text-gray-600 text-sm rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              선택 해제
+            </button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-16 text-gray-400">로딩중...</div>
@@ -216,6 +297,15 @@ export default function AdminWithdrawalsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b">
                   <tr>
+                    <th className="px-3 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        checked={allPendingSelected}
+                        onChange={toggleSelectAll}
+                        disabled={pendingFiltered.length === 0}
+                        className="w-4 h-4 accent-red-500 cursor-pointer"
+                      />
+                    </th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500">날짜</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500">신청자</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-500">입금은행</th>
@@ -234,7 +324,19 @@ export default function AdminWithdrawalsPage() {
                     const tax = wd.tax || Math.floor(wd.amount * TAX_RATE);
                     const net = wd.netAmount || wd.amount - tax - FEE;
                     return (
-                      <tr key={wd.id} className="hover:bg-gray-50">
+                      <tr key={wd.id} className={`hover:bg-gray-50 ${selectedIds.has(wd.id) ? "bg-sky-50" : ""}`}>
+                        <td className="px-3 py-3">
+                          {wd.status === "PENDING" ? (
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(wd.id)}
+                              onChange={() => toggleSelect(wd.id)}
+                              className="w-4 h-4 accent-red-500 cursor-pointer"
+                            />
+                          ) : (
+                            <span className="block w-4" />
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                           {new Date(wd.createdAt).toLocaleDateString("ko-KR")}
                         </td>

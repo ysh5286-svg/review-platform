@@ -111,6 +111,7 @@ model User {
   receivedMessages Message[]       @relation("ReceivedMessages")
   givenRatings     ReviewerRating[] @relation("GivenRatings")
   receivedRatings  ReviewerRating[] @relation("ReceivedRatings")
+  givenStoreRatings StoreRating[]  @relation("GivenStoreRatings")
   pointCharges     PointCharge[]
 }
 
@@ -174,6 +175,8 @@ model Campaign {
   maxReviewers Int
   startDate    DateTime
   endDate      DateTime
+  selectionDate  DateTime?
+  reviewDeadline DateTime?
   status       CampaignStatus @default(RECRUITING)
 
   advertiserId String
@@ -184,6 +187,7 @@ model Campaign {
 
   applications Application[]
   messages     Message[]
+  storeRatings StoreRating[]
 
   @@index([status])
   @@index([category])
@@ -242,8 +246,9 @@ model Review {
 
   createdAt DateTime @default(now())
 
-  rankChecks SearchRankCheck[]
-  rating     ReviewerRating?
+  rankChecks  SearchRankCheck[]
+  rating      ReviewerRating?
+  storeRating StoreRating?
 
   @@index([reviewerId])
   @@index([status])
@@ -375,4 +380,23 @@ model PointCharge {
 
   createdAt   DateTime  @default(now())
   processedAt DateTime?
+}
+
+// ============ 매장 평가 (리뷰어 → 광고주) ============
+
+model StoreRating {
+  id         String  @id @default(cuid())
+  reviewerId String
+  campaignId String
+  reviewId   String  @unique
+  tags       String  // JSON: 선택한 평가 태그 배열 (최대 3개)
+  feedback   String? // 건의 및 불편사항 (익명 텍스트)
+
+  reviewer User     @relation("GivenStoreRatings", fields: [reviewerId], references: [id])
+  campaign Campaign @relation(fields: [campaignId], references: [id])
+  review   Review   @relation(fields: [reviewId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([reviewerId, reviewId])
 }

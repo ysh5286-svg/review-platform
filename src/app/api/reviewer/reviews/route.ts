@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { applicationId, reviewUrl } = await request.json();
+  const { applicationId, reviewUrl, storeTags, storeFeedback } = await request.json();
 
   if (!applicationId || !reviewUrl) {
     return NextResponse.json(
@@ -78,6 +78,19 @@ export async function POST(request: Request) {
       reviewUrl,
     },
   });
+
+  // 매장 평가 (선택)
+  if (storeTags && Array.isArray(storeTags) && storeTags.length > 0) {
+    await prisma.storeRating.create({
+      data: {
+        reviewerId: session.user.id,
+        campaignId: application.campaignId,
+        reviewId: review.id,
+        tags: JSON.stringify(storeTags.slice(0, 3)),
+        feedback: storeFeedback || null,
+      },
+    });
+  }
 
   return NextResponse.json(review, { status: 201 });
 }

@@ -25,6 +25,8 @@ interface CampaignData {
   maxReviewers: number;
   startDate: string;
   endDate: string;
+  selectionDate: string | null;
+  reviewDeadline: string | null;
   status: string;
   promotionType: string | null;
   productUrl: string | null;
@@ -175,48 +177,149 @@ function MissionIcon({ icon }: { icon: string }) {
 
 function MissionIconRow({ items }: { items: { label: string; icon: string }[] }) {
   return (
-    <div className="flex items-start justify-center gap-5 py-4">
+    <div className="flex items-start justify-center gap-3 sm:gap-5 py-4 flex-wrap">
       {items.map((item, i) => (
-        <div key={i} className="flex flex-col items-center gap-1.5 w-16">
-          <div className="w-11 h-11 flex items-center justify-center">
+        <div key={i} className="flex flex-col items-center gap-1.5 w-14 sm:w-16">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center">
             <MissionIcon icon={item.icon} />
           </div>
-          <span className="text-[11px] text-gray-600 text-center leading-tight">{item.label}</span>
+          <span className="text-[10px] sm:text-[11px] text-gray-600 text-center leading-tight">{item.label}</span>
         </div>
       ))}
     </div>
   );
 }
 
-/* ===== 미니 달력 ===== */
-function MiniCalendar({ startDate, endDate }: { startDate: string; endDate: string }) {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const [viewDate, setViewDate] = useState(() => new Date(start));
+/* ===== 미니 달력 (기간별 컬러 바) ===== */
+interface MiniCalendarProps {
+  startDate: string;
+  endDate: string;
+  selectionDate?: string | null;
+  reviewDeadline?: string | null;
+}
+
+function toLocalDate(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+interface PeriodBar {
+  label: string;
+  startDate: Date;
+  endDate: Date;
+  bgColor: string;
+  textColor: string;
+}
+
+function MiniCalendar({ startDate, endDate, selectionDate, reviewDeadline }: MiniCalendarProps) {
+  const recruitStart = toLocalDate(new Date(startDate));
+  const recruitEnd = toLocalDate(new Date(endDate));
+  const selDate = selectionDate ? toLocalDate(new Date(selectionDate)) : null;
+  const revDeadline = reviewDeadline ? toLocalDate(new Date(reviewDeadline)) : null;
+
+  const [viewDate, setViewDate] = useState(() => new Date(recruitStart));
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
-  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
 
-  const cells = [];
+  // Build cells: null for empty, number for day
+  const cells: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  // Pad to complete last row
+  while (cells.length % 7 !== 0) cells.push(null);
 
-  function isInRange(day: number) {
-    const date = new Date(year, month, day);
-    return date >= new Date(start.getFullYear(), start.getMonth(), start.getDate()) &&
-           date <= new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  const today = toLocalDate(new Date());
+  const isToday = (day: number) => year === today.getFullYear() && month === today.getMonth() && day === today.getDate();
+
+  // Build period bars
+  const periods: PeriodBar[] = [];
+  periods.push({ label: "모집", startDate: recruitStart, endDate: recruitEnd, bgColor: "bg-amber-100", textColor: "text-amber-700" });
+  if (selDate && revDeadline) {
+    periods.push({ label: "체험&리뷰", startDate: selDate, endDate: revDeadline, bgColor: "bg-sky-100", textColor: "text-sky-700" });
   }
-  function isStart(day: number) {
-    return year === start.getFullYear() && month === start.getMonth() && day === start.getDate();
+
+  // For each week row, compute which bars overlap
+  const weeks: (number | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    weeks.push(cells.slice(i, i + 7));
   }
-  function isEnd(day: number) {
-    return year === end.getFullYear() && month === end.getMonth() && day === end.getDate();
+
+  function getWeekDateRange(weekIdx: number): { weekStart: Date; weekEnd: Date } {
+    // First cell of the week
+    const firstCellIdx = weekIdx * 7;
+    let startDay = 1;
+    let endDay = daysInMonth;
+    // Find first non-null day in week
+    for (let i = 0; i < 7; i++) {
+      const cell = cells[firstCellIdx + i];
+      if (cell !== null) { startDay = cell; break; }
+    }
+    // Find last non-null day in week
+    for (let i = 6; i >= 0; i--) {
+      const cell = cells[firstCellIdx + i];
+      if (cell !== null) { endDay = cell; break; }
+    }
+    return {
+      weekStart: new Date(year, month, startDay),
+      weekEnd: new Date(year, month, endDay),
+    };
   }
+
+  function getBarForWeek(period: PeriodBar, weekIdx: number): { colStart: number; colSpan: number } | null {
+    const { weekStart, weekEnd } = getWeekDateRange(weekIdx);
+    // Check overlap
+    if (period.endDate < weekStart || period.startDate > weekEnd) return null;
+
+    const barStart = period.startDate > weekStart ? period.startDate : weekStart;
+    const barEnd = period.endDate < weekEnd ? period.endDate : weekEnd;
+
+    // Find column positions
+    const firstCellIdx = weekIdx * 7;
+    let colStart = 0;
+    let colEnd = 6;
+
+    for (let i = 0; i < 7; i++) {
+      const cell = cells[firstCellIdx + i];
+      if (cell !== null) {
+        const cellDate = new Date(year, month, cell);
+        if (cellDate.getTime() === barStart.getTime()) { colStart = i; break; }
+      }
+      if (cell === null && i < 7) {
+        // For empty cells at start of month, check if period starts before month
+        if (period.startDate < weekStart) { colStart = i; break; }
+      }
+    }
+
+    for (let i = 6; i >= 0; i--) {
+      const cell = cells[firstCellIdx + i];
+      if (cell !== null) {
+        const cellDate = new Date(year, month, cell);
+        if (cellDate.getTime() === barEnd.getTime()) { colEnd = i; break; }
+      }
+      if (cell === null && i > 0) {
+        if (period.endDate > weekEnd) { colEnd = i; break; }
+      }
+    }
+
+    // Handle period starting before this month
+    if (period.startDate < new Date(year, month, 1) && weekIdx === 0) {
+      colStart = 0;
+    }
+    // Handle period ending after this month
+    if (period.endDate > new Date(year, month, daysInMonth) && weekIdx === weeks.length - 1) {
+      colEnd = 6;
+    }
+
+    return { colStart, colSpan: colEnd - colStart + 1 };
+  }
+
+  // Check if deadline is in this month
+  const deadlineInMonth = revDeadline && revDeadline.getFullYear() === year && revDeadline.getMonth() === month;
 
   return (
     <div>
@@ -229,35 +332,84 @@ function MiniCalendar({ startDate, endDate }: { startDate: string; endDate: stri
           <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
         </button>
       </div>
+
+      {/* Day headers */}
       <div className="grid grid-cols-7 text-center text-xs mb-1">
         {["일","월","화","수","목","금","토"].map((d) => (
           <span key={d} className="py-1 text-gray-400 font-medium">{d}</span>
         ))}
       </div>
-      <div className="grid grid-cols-7 text-center text-xs">
-        {cells.map((day, i) => {
-          if (!day) return <span key={`e-${i}`} />;
-          const inRange = isInRange(day);
-          const isS = isStart(day);
-          const isE = isEnd(day);
-          return (
-            <span
-              key={day}
-              className={`py-1.5 relative ${
-                isS || isE
-                  ? "bg-blue-500 text-white font-bold rounded-full"
-                  : inRange
-                  ? "bg-blue-50 text-blue-700 font-medium"
-                  : "text-gray-600"
-              }`}
-            >
-              {day}
-            </span>
-          );
-        })}
-      </div>
-      <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
-        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> 체험단 기간</span>
+
+      {/* Calendar weeks with bars */}
+      {weeks.map((week, wi) => (
+        <div key={wi} className="relative">
+          {/* Day numbers */}
+          <div className="grid grid-cols-7 text-center text-xs">
+            {week.map((day, di) => {
+              if (day === null) return <span key={`e-${wi}-${di}`} className="py-1.5" />;
+              const todayClass = isToday(day) ? "bg-blue-500 text-white font-bold rounded-full" : "";
+              const isDeadline = deadlineInMonth && day === revDeadline!.getDate();
+              return (
+                <span key={day} className={`py-1.5 relative ${todayClass || "text-gray-600"}`}>
+                  {day}일
+                  {isDeadline && !isToday(day) && (
+                    <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-red-500" />
+                  )}
+                </span>
+              );
+            })}
+          </div>
+          {/* Period bars */}
+          <div className="relative h-auto">
+            {periods.map((period) => {
+              const bar = getBarForWeek(period, wi);
+              if (!bar) return null;
+              const left = `${(bar.colStart / 7) * 100}%`;
+              const width = `${(bar.colSpan / 7) * 100}%`;
+              return (
+                <div
+                  key={`${period.label}-${wi}`}
+                  className={`${period.bgColor} ${period.textColor} text-[9px] font-bold rounded-sm h-4 flex items-center justify-center overflow-hidden`}
+                  style={{ marginLeft: left, width }}
+                >
+                  {bar.colSpan >= 2 ? period.label : ""}
+                </div>
+              );
+            })}
+            {/* Deadline marker */}
+            {revDeadline && (() => {
+              const { weekStart, weekEnd } = getWeekDateRange(wi);
+              if (revDeadline < weekStart || revDeadline > weekEnd) return null;
+              // Find column
+              const firstCellIdx = wi * 7;
+              let col = 0;
+              for (let i = 0; i < 7; i++) {
+                const cell = cells[firstCellIdx + i];
+                if (cell !== null && new Date(year, month, cell).getTime() === revDeadline.getTime()) { col = i; break; }
+              }
+              const left = `${(col / 7) * 100}%`;
+              return (
+                <div
+                  className="bg-red-100 text-red-600 text-[9px] font-bold rounded-sm h-4 flex items-center justify-center"
+                  style={{ marginLeft: left, width: `${(1 / 7) * 100}%` }}
+                >
+                  마감
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      ))}
+
+      {/* Legend */}
+      <div className="flex items-center gap-3 mt-3 text-[10px] text-gray-500 flex-wrap">
+        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-amber-200" /> 모집</span>
+        {selDate && revDeadline && (
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-sky-200" /> 체험&리뷰</span>
+        )}
+        {revDeadline && (
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-red-100" /> 마감</span>
+        )}
       </div>
     </div>
   );
@@ -342,7 +494,7 @@ export default function CampaignDetailClient({
       </Link>
 
       {/* 타이틀 */}
-      <h1 className="text-2xl font-bold text-gray-900 mt-3 mb-2">{campaign.title}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mt-3 mb-2">{campaign.title}</h1>
       <div className="flex flex-wrap items-center gap-2 mb-6">
         <span className="text-sm font-bold text-gray-400">#{campaign.campaignNumber}</span>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${platformInfo.className}`}>{platformInfo.label}</span>
@@ -571,7 +723,7 @@ export default function CampaignDetailClient({
             {/* 체험단 일정 (달력) */}
             <div className="bg-white rounded-xl border p-4">
               <h4 className="text-sm font-bold text-gray-900 mb-3">체험단 일정</h4>
-              <MiniCalendar startDate={campaign.startDate} endDate={campaign.endDate} />
+              <MiniCalendar startDate={campaign.startDate} endDate={campaign.endDate} selectionDate={campaign.selectionDate} reviewDeadline={campaign.reviewDeadline} />
             </div>
 
             {/* 모집 현황 */}

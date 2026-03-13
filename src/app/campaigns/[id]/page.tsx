@@ -41,6 +41,8 @@ export default async function CampaignDetailPage({
     ...campaign,
     startDate: campaign.startDate.toISOString(),
     endDate: campaign.endDate.toISOString(),
+    selectionDate: campaign.selectionDate?.toISOString() || null,
+    reviewDeadline: campaign.reviewDeadline?.toISOString() || null,
     createdAt: campaign.createdAt.toISOString(),
     updatedAt: campaign.updatedAt.toISOString(),
   };

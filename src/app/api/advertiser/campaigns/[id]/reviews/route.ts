@@ -32,6 +32,9 @@ export async function GET(
       application: {
         select: { id: true },
       },
+      storeRating: {
+        select: { tags: true, feedback: true },
+      },
     },
     orderBy: { createdAt: "desc" },
   });

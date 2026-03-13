@@ -17,11 +17,27 @@ const REVIEW_STATUS: Record<string, { label: string; className: string }> = {
   REJECTED: { label: "반려됨", className: "bg-red-100 text-red-700" },
 };
 
+const STORE_TAGS = [
+  { key: "kind_staff", label: "사장님/직원이 매우 친절해요", icon: "😊" },
+  { key: "generous_offer", label: "제공 내역이 명확하고 푸짐해요", icon: "🎁" },
+  { key: "clean_store", label: "매장이 청결하고 관리가 잘 되어 있어요", icon: "✨" },
+  { key: "photo_friendly", label: "인테리어가 예뻐서 사진 찍기 좋아요", icon: "📸" },
+  { key: "fast_response", label: "예약 응대가 빠르고 매끄러워요", icon: "⚡" },
+  { key: "easy_access", label: "주차나 접근성이 편리해요", icon: "🚗" },
+  { key: "great_quality", label: "음식(제품)의 퀄리티가 기대 이상이에요", icon: "👨‍🍳" },
+  { key: "fair_guide", label: "리뷰 가이드라인이 합리적이고 간결해요", icon: "📋" },
+];
+
 export default function ReviewerReviewsPage() {
   const { data: session } = useSession();
   const [items, setItems] = useState<AcceptedApp[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submitForm, setSubmitForm] = useState<{ applicationId: string; url: string } | null>(null);
+  const [submitForm, setSubmitForm] = useState<{
+    applicationId: string;
+    url: string;
+    storeTags: string[];
+    storeFeedback: string;
+  } | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -46,6 +62,8 @@ export default function ReviewerReviewsPage() {
         body: JSON.stringify({
           applicationId: submitForm.applicationId,
           reviewUrl: submitForm.url,
+          storeTags: submitForm.storeTags,
+          storeFeedback: submitForm.storeFeedback || undefined,
         }),
       });
 
@@ -66,6 +84,18 @@ export default function ReviewerReviewsPage() {
     } finally {
       setSubmitLoading(false);
     }
+  }
+
+  function toggleStoreTag(key: string) {
+    if (!submitForm) return;
+    const selected = submitForm.storeTags.includes(key);
+    if (!selected && submitForm.storeTags.length >= 3) return;
+    setSubmitForm({
+      ...submitForm,
+      storeTags: selected
+        ? submitForm.storeTags.filter((t) => t !== key)
+        : [...submitForm.storeTags, key],
+    });
   }
 
   return (
@@ -134,8 +164,9 @@ export default function ReviewerReviewsPage() {
                 ) : (
                   <div>
                     {submitForm?.applicationId === item.id ? (
-                      <form onSubmit={handleSubmitReview} className="flex gap-2 items-end">
-                        <div className="flex-1">
+                      <form onSubmit={handleSubmitReview} className="space-y-4">
+                        {/* 리뷰 URL */}
+                        <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             리뷰 URL
                           </label>
@@ -149,30 +180,96 @@ export default function ReviewerReviewsPage() {
                             className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                             placeholder="https://..."
                           />
-                          {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
                         </div>
-                        <button
-                          type="submit"
-                          disabled={submitLoading}
-                          className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 disabled:opacity-50"
-                        >
-                          {submitLoading ? "제출중..." : "제출"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSubmitForm(null);
-                            setError("");
-                          }}
-                          className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700"
-                        >
-                          취소
-                        </button>
+
+                        {/* 매장 평가 */}
+                        <div className="border-t pt-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <h4 className="text-sm font-bold text-gray-900">매장 평가</h4>
+                            <span className="text-xs text-gray-400">(최대 3개 선택)</span>
+                          </div>
+                          <div className="grid grid-cols-1 gap-2">
+                            {STORE_TAGS.map((tag) => {
+                              const selected = submitForm.storeTags.includes(tag.key);
+                              const disabled = !selected && submitForm.storeTags.length >= 3;
+                              return (
+                                <button
+                                  key={tag.key}
+                                  type="button"
+                                  onClick={() => toggleStoreTag(tag.key)}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm text-left transition-colors cursor-pointer ${
+                                    selected
+                                      ? "border-red-500 bg-red-50 text-red-700"
+                                      : disabled
+                                      ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
+                                      : "border-gray-200 hover:border-red-300 text-gray-600"
+                                  }`}
+                                >
+                                  <span>{tag.icon}</span>
+                                  <span>{tag.label}</span>
+                                  {selected && (
+                                    <svg className="w-4 h-4 ml-auto text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 건의 및 불편사항 */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            건의 및 불편사항 <span className="text-gray-400 font-normal">(선택)</span>
+                          </label>
+                          <textarea
+                            value={submitForm.storeFeedback}
+                            onChange={(e) =>
+                              setSubmitForm({ ...submitForm, storeFeedback: e.target.value })
+                            }
+                            rows={2}
+                            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                            placeholder="매장에 전달하기 어려운 피드백을 작성해 주세요 (익명으로 전달됩니다)"
+                          />
+                          <p className="text-xs text-gray-400 mt-1">
+                            * 건의사항은 익명으로 사장님에게만 전달됩니다
+                          </p>
+                        </div>
+
+                        {error && <p className="text-red-500 text-xs">{error}</p>}
+
+                        <div className="flex gap-2">
+                          <button
+                            type="submit"
+                            disabled={submitLoading}
+                            className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 disabled:opacity-50 cursor-pointer"
+                          >
+                            {submitLoading ? "제출중..." : "제출"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubmitForm(null);
+                              setError("");
+                            }}
+                            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 cursor-pointer"
+                          >
+                            취소
+                          </button>
+                        </div>
                       </form>
                     ) : (
                       <button
-                        onClick={() => setSubmitForm({ applicationId: item.id, url: "" })}
-                        className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors"
+                        onClick={() =>
+                          setSubmitForm({
+                            applicationId: item.id,
+                            url: "",
+                            storeTags: [],
+                            storeFeedback: "",
+                          })
+                        }
+                        className="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors cursor-pointer"
                       >
                         리뷰 제출
                       </button>

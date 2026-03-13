@@ -187,7 +187,7 @@ function CampaignsContent() {
           value={campaignType}
           onChange={setCampaignType}
         />
-        <div className="ml-auto">
+        <div className="sm:ml-auto">
           <FilterSelect
             options={SORTS}
             value={sort}

@@ -50,6 +50,7 @@ interface Review {
   status: string;
   createdAt: string;
   reviewer: { id: string; name: string | null; email: string | null };
+  storeRating?: { tags: string; feedback: string | null } | null;
 }
 
 interface Campaign {
@@ -100,6 +101,17 @@ const GRADE_COLORS: Record<string, string> = {
   ADVANCED: "bg-yellow-100 text-yellow-700",
   PREMIUM: "bg-purple-100 text-purple-700",
   INFLUENCER: "bg-green-100 text-green-700",
+};
+
+const STORE_TAGS: Record<string, { label: string; icon: string }> = {
+  kind_staff: { label: "사장님/직원이 매우 친절해요", icon: "😊" },
+  generous_offer: { label: "제공 내역이 명확하고 푸짐해요", icon: "🎁" },
+  clean_store: { label: "매장이 청결하고 관리가 잘 되어 있어요", icon: "✨" },
+  photo_friendly: { label: "인테리어가 예뻐서 사진 찍기 좋아요", icon: "📸" },
+  fast_response: { label: "예약 응대가 빠르고 매끄러워요", icon: "⚡" },
+  easy_access: { label: "주차나 접근성이 편리해요", icon: "🚗" },
+  great_quality: { label: "음식(제품)의 퀄리티가 기대 이상이에요", icon: "👨‍🍳" },
+  fair_guide: { label: "리뷰 가이드라인이 합리적이고 간결해요", icon: "📋" },
 };
 
 const RATING_TAGS = [
@@ -432,6 +444,62 @@ export default function AdvertiserCampaignDetailPage() {
               </tbody>
             </table>
           )}
+
+          {/* 리뷰어 피드백 섹션 */}
+          {reviews.some((r) => r.storeRating) && (
+            <div className="mt-6 bg-white rounded-xl border shadow-sm p-5">
+              <h3 className="text-sm font-bold text-gray-900 mb-4">리뷰어 피드백</h3>
+
+              {/* 태그 집계 */}
+              {(() => {
+                const tagCounts: Record<string, number> = {};
+                const feedbacks: string[] = [];
+                reviews.forEach((r) => {
+                  if (!r.storeRating) return;
+                  try {
+                    const tags: string[] = JSON.parse(r.storeRating.tags);
+                    tags.forEach((t) => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+                  } catch {}
+                  if (r.storeRating.feedback) feedbacks.push(r.storeRating.feedback);
+                });
+
+                const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+
+                return (
+                  <>
+                    {sortedTags.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        {sortedTags.map(([key, count]) => {
+                          const tag = STORE_TAGS[key];
+                          if (!tag) return null;
+                          return (
+                            <div key={key} className="flex items-center gap-2 text-sm">
+                              <span>{tag.icon}</span>
+                              <span className="text-gray-700">{tag.label}</span>
+                              <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">{count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {feedbacks.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-2">건의 및 불편사항 (익명)</p>
+                        <div className="space-y-2">
+                          {feedbacks.map((fb, i) => (
+                            <div key={i} className="bg-gray-50 rounded-lg p-3">
+                              <p className="text-sm text-gray-600">{fb}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          )}
         </div>
       )}
 
@@ -461,16 +529,20 @@ export default function AdvertiserCampaignDetailPage() {
             </div>
 
             {/* 평가 태그 */}
-            <p className="text-sm font-medium text-gray-700 mb-2">평가 항목 (복수 선택 가능)</p>
+            <p className="text-sm font-medium text-gray-700 mb-2">평가 항목 (최대 3개 선택)</p>
             <div className="grid grid-cols-1 gap-2 mb-4">
               {RATING_TAGS.map((tag) => {
                 const selected = ratingTags.includes(tag.key);
+                const disabled = !selected && ratingTags.length >= 3;
                 return (
                   <button
                     key={tag.key}
-                    onClick={() => setRatingTags((prev) => selected ? prev.filter((t) => t !== tag.key) : [...prev, tag.key])}
+                    onClick={() => {
+                      if (disabled) return;
+                      setRatingTags((prev) => selected ? prev.filter((t) => t !== tag.key) : [...prev, tag.key]);
+                    }}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm text-left transition-colors cursor-pointer ${
-                      selected ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 hover:border-blue-300 text-gray-600"
+                      selected ? "border-blue-500 bg-blue-50 text-blue-700" : disabled ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed" : "border-gray-200 hover:border-blue-300 text-gray-600"
                     }`}
                   >
                     <span>{tag.icon}</span>

@@ -155,6 +155,7 @@ export default function ReviewerWithdrawPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
 
   const [form, setForm] = useState({
@@ -311,8 +312,8 @@ export default function ReviewerWithdrawPage() {
                 <span className="text-gray-500">소득세 공제액</span>
                 <span className="text-gray-700">-{tax.toLocaleString()} 원</span>
               </div>
-              <div className="border-t pt-2 flex justify-between">
-                <span className="text-sm text-sky-600 font-medium">
+              <div className="border-t pt-2 flex flex-col sm:flex-row sm:justify-between gap-1">
+                <span className="text-xs sm:text-sm text-sky-600 font-medium">
                   {session?.user?.name || "회원"}님이 실제로 받을 예상 금액이에요!
                 </span>
                 <span className="text-sky-600 font-bold text-lg">{netAmount.toLocaleString()} 원</span>
@@ -384,7 +385,7 @@ export default function ReviewerWithdrawPage() {
             />
             <span className="text-sm text-gray-700">개인정보 이용 동의 (필수)</span>
           </label>
-          <button type="button" className="text-sm text-gray-400 underline cursor-pointer">약관보기</button>
+          <button type="button" onClick={() => setShowPrivacy(true)} className="text-sm text-gray-400 underline cursor-pointer">약관보기</button>
         </div>
 
         {/* 경고 문구 */}
@@ -434,6 +435,47 @@ export default function ReviewerWithdrawPage() {
 
       {/* 정산 달력 모달 */}
       {showCalendar && <SettlementCalendar onClose={() => setShowCalendar(false)} />}
+
+      {/* 개인정보 이용 동의 약관 모달 */}
+      {showPrivacy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setShowPrivacy(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b shrink-0">
+              <h3 className="text-lg font-bold text-gray-900">개인정보 수집 및 이용 동의</h3>
+            </div>
+            <div className="px-6 py-4 overflow-y-auto text-sm text-gray-700 space-y-4 leading-relaxed">
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">1. 수집 항목</h4>
+                <p>예금주명, 은행명, 계좌번호, 주민등록번호</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">2. 수집 및 이용 목적</h4>
+                <p>출금 신청 처리, 본인 확인, 원천징수 세금 신고</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">3. 보유 및 이용 기간</h4>
+                <p>출금 처리 완료 후 관련 법령에 따라 5년간 보관 후 파기합니다. 단, 세법에 의한 보관 의무가 있는 경우 해당 기간까지 보관합니다.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">4. 동의 거부권 및 불이익</h4>
+                <p>개인정보 수집 및 이용에 대한 동의를 거부하실 수 있으나, 동의를 거부하실 경우 출금 신청이 불가합니다.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 mb-1">5. 개인정보 처리 위탁</h4>
+                <p>출금 처리를 위해 금융기관에 필요한 최소한의 정보가 전달될 수 있습니다.</p>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t shrink-0">
+              <button
+                onClick={() => { setAgreePrivacy(true); setShowPrivacy(false); }}
+                className="w-full py-3 bg-sky-500 text-white rounded-xl font-medium hover:bg-sky-600 transition-colors cursor-pointer"
+              >
+                동의하고 닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

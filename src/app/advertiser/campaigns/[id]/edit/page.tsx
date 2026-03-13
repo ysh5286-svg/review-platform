@@ -54,6 +54,8 @@ export default function EditCampaignPage() {
     maxReviewers: 1,
     startDate: "",
     endDate: "",
+    selectionDate: "",
+    reviewDeadline: "",
   });
 
   useEffect(() => {
@@ -76,6 +78,8 @@ export default function EditCampaignPage() {
           maxReviewers: data.maxReviewers || 1,
           startDate: data.startDate ? new Date(data.startDate).toISOString().split("T")[0] : "",
           endDate: data.endDate ? new Date(data.endDate).toISOString().split("T")[0] : "",
+          selectionDate: data.selectionDate ? new Date(data.selectionDate).toISOString().split("T")[0] : "",
+          reviewDeadline: data.reviewDeadline ? new Date(data.reviewDeadline).toISOString().split("T")[0] : "",
         });
         setImageUrl(data.imageUrl || "");
       })
@@ -262,12 +266,23 @@ export default function EditCampaignPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">시작일</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">모집 시작일</label>
             <input type="date" name="startDate" value={form.startDate} onChange={handleChange} required className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">종료일</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">모집 마감일</label>
             <input type="date" name="endDate" value={form.endDate} onChange={handleChange} required className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">선정 발표일</label>
+            <input type="date" name="selectionDate" value={form.selectionDate} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">체험/리뷰 마감일</label>
+            <input type="date" name="reviewDeadline" value={form.reviewDeadline} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
           </div>
         </div>
 

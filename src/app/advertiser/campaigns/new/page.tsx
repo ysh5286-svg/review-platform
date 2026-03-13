@@ -34,7 +34,14 @@ const STEP_LABELS = [
   "홍보 유형 및 채널과 카테고리",
   "체험 가능 요일 및 시간",
   "체험단 설정",
+  "캠페인 일정",
   "제공 내역 및 포인트 결제",
+];
+
+const PERIOD_PRESETS = [
+  { label: "일주일 단기형", recruitDays: 7, reviewDays: 7 },
+  { label: "2주 표준형", recruitDays: 14, reviewDays: 14 },
+  { label: "한 달 정기형", recruitDays: 14, reviewDays: 21 },
 ];
 
 interface FormData {
@@ -61,6 +68,10 @@ interface FormData {
   keyword1: string;
   keyword2: string;
   keyword3: string;
+  startDate: string;
+  endDate: string;
+  selectionDate: string;
+  reviewDeadline: string;
   offerDetails: string;
   maxReviewers: number;
   pointReward: number;
@@ -90,10 +101,24 @@ const initialForm: FormData = {
   keyword1: "",
   keyword2: "",
   keyword3: "",
+  startDate: "",
+  endDate: "",
+  selectionDate: "",
+  reviewDeadline: "",
   offerDetails: "",
   maxReviewers: 0,
   pointReward: 0,
 };
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+function toDateStr(date: Date): string {
+  return date.toISOString().split("T")[0];
+}
 
 export default function NewCampaignPage() {
   const router = useRouter();
@@ -140,13 +165,21 @@ export default function NewCampaignPage() {
     }
     if (s === 4 && !form.keyword1.trim()) { setError("키워드 1은 필수입니다."); return false; }
     if (s === 5) {
+      if (!form.startDate || !form.endDate) { setError("모집 기간을 설정해주세요."); return false; }
+      if (form.startDate >= form.endDate) { setError("모집 마감일은 시작일 이후여야 합니다."); return false; }
+      const recruitDays = Math.ceil((new Date(form.endDate).getTime() - new Date(form.startDate).getTime()) / (1000 * 60 * 60 * 24));
+      if (recruitDays < 3) { setError("모집 기간은 최소 3일 이상이어야 합니다."); return false; }
+      if (form.selectionDate && form.selectionDate <= form.endDate) { setError("선정일은 모집 마감일 이후여야 합니다."); return false; }
+      if (form.reviewDeadline && form.selectionDate && form.reviewDeadline <= form.selectionDate) { setError("리뷰 마감일은 선정일 이후여야 합니다."); return false; }
+    }
+    if (s === 6) {
       if (!form.offerDetails.trim()) { setError("제공 내역을 입력해주세요."); return false; }
       if (form.maxReviewers < 1) { setError("모집 인원을 입력해주세요."); return false; }
     }
     return true;
   }
 
-  function nextStep() { if (validateStep(step)) { setStep((s) => Math.min(s + 1, 5)); window.scrollTo(0, 0); } }
+  function nextStep() { if (validateStep(step)) { setStep((s) => Math.min(s + 1, 6)); window.scrollTo(0, 0); } }
   function prevStep() { setError(""); setStep((s) => Math.max(s - 1, 1)); window.scrollTo(0, 0); }
 
   const channelInfo = CHANNELS.find((c) => c.value === form.contentType);
@@ -156,11 +189,9 @@ export default function NewCampaignPage() {
   const shortage = Math.max(0, requiredPoints - userPoints);
 
   async function handleSubmit() {
-    if (!validateStep(5)) return;
+    if (!validateStep(6)) return;
     setLoading(true);
     setError("");
-    const now = new Date();
-    const twoWeeks = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
     try {
       const res = await fetch("/api/campaigns", {
         method: "POST",
@@ -178,8 +209,10 @@ export default function NewCampaignPage() {
           requirements: form.missionText || undefined,
           pointReward: Number(form.pointReward),
           maxReviewers: Number(form.maxReviewers),
-          startDate: now.toISOString(),
-          endDate: twoWeeks.toISOString(),
+          startDate: new Date(form.startDate).toISOString(),
+          endDate: new Date(form.endDate).toISOString(),
+          selectionDate: form.selectionDate ? new Date(form.selectionDate).toISOString() : undefined,
+          reviewDeadline: form.reviewDeadline ? new Date(form.reviewDeadline).toISOString() : undefined,
           promotionType: form.promotionType,
           productUrl: form.productUrl || undefined,
           contactPhone: [form.contactPhone1, form.contactPhone2, form.contactPhone3].filter(Boolean).join("-") || undefined,
@@ -426,8 +459,110 @@ export default function NewCampaignPage() {
           </div>
         )}
 
-        {/* ===== Step 5 ===== */}
+        {/* ===== Step 5: 캠페인 일정 ===== */}
         {step === 5 && (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-800 mb-3">빠른 설정</label>
+              <div className="flex gap-2 flex-wrap">
+                {PERIOD_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      const today = toDateStr(new Date());
+                      const end = addDays(today, preset.recruitDays);
+                      const sel = addDays(end, 1);
+                      const deadline = addDays(sel, preset.reviewDays);
+                      updateForm({ startDate: today, endDate: end, selectionDate: sel, reviewDeadline: deadline });
+                    }}
+                    className="px-4 py-2 text-sm border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-1">모집 시작일</label>
+                <input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => updateForm({ startDate: e.target.value })}
+                  className="w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-1">모집 마감일</label>
+                <input
+                  type="date"
+                  value={form.endDate}
+                  min={form.startDate ? addDays(form.startDate, 3) : undefined}
+                  onChange={(e) => updateForm({ endDate: e.target.value })}
+                  className="w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-1">선정 발표일</label>
+                <input
+                  type="date"
+                  value={form.selectionDate}
+                  min={form.endDate ? addDays(form.endDate, 1) : undefined}
+                  onChange={(e) => updateForm({ selectionDate: e.target.value })}
+                  className="w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-1">체험/리뷰 마감일</label>
+                <input
+                  type="date"
+                  value={form.reviewDeadline}
+                  min={form.selectionDate ? addDays(form.selectionDate, 1) : undefined}
+                  onChange={(e) => updateForm({ reviewDeadline: e.target.value })}
+                  className="w-full px-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {form.startDate && form.endDate && (
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">모집 기간</span>
+                  <span className="font-medium">{form.startDate} ~ {form.endDate} ({Math.ceil((new Date(form.endDate).getTime() - new Date(form.startDate).getTime()) / (1000 * 60 * 60 * 24))}일)</span>
+                </div>
+                {form.selectionDate && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">선정 발표일</span>
+                    <span className="font-medium">{form.selectionDate}</span>
+                  </div>
+                )}
+                {form.reviewDeadline && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">체험/리뷰 마감</span>
+                    <span className="font-medium">{form.reviewDeadline}</span>
+                  </div>
+                )}
+                {form.selectionDate && form.reviewDeadline && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">체험/리뷰 기간</span>
+                    <span className="font-medium">{Math.ceil((new Date(form.reviewDeadline).getTime() - new Date(form.selectionDate).getTime()) / (1000 * 60 * 60 * 24))}일</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+              <p className="text-xs text-blue-700 leading-relaxed">
+                <span className="font-bold">TIP!</span> 모집 기간은 최소 3일 이상 설정해 주세요. 선정일과 리뷰 마감일은 선택사항이지만, 설정하면 리뷰어에게 일정이 달력으로 안내됩니다.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ===== Step 6 ===== */}
+        {step === 6 && (
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-bold text-gray-800 mb-1">제공 내역</label>
@@ -488,7 +623,7 @@ export default function NewCampaignPage() {
 
         <div className="flex justify-between mt-6 pt-4 border-t">
           {step > 1 ? <button type="button" onClick={prevStep} className="px-5 py-2.5 text-sm text-gray-600 hover:text-gray-800 cursor-pointer">← 이전</button> : <div />}
-          {step < 5 ? (
+          {step < 6 ? (
             <button type="button" onClick={nextStep} className="px-8 py-3 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600 active:scale-95 transition-all cursor-pointer">다음으로</button>
           ) : (
             <button type="button" onClick={handleSubmit} disabled={loading} className="px-8 py-3 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600 disabled:opacity-50 active:scale-95 transition-all cursor-pointer">{loading ? "등록중..." : "체험단 등록"}</button>

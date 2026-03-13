@@ -178,6 +178,8 @@ export async function POST(request: NextRequest) {
       keyword1,
       keyword2,
       keyword3,
+      selectionDate,
+      reviewDeadline,
     } = body;
 
     // contentType → platform 자동 매핑
@@ -212,6 +214,8 @@ export async function POST(request: NextRequest) {
         maxReviewers,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
+        selectionDate: selectionDate ? new Date(selectionDate) : undefined,
+        reviewDeadline: reviewDeadline ? new Date(reviewDeadline) : undefined,
         advertiserId: session.user.id,
         promotionType: promotionType || undefined,
         productUrl: productUrl || undefined,

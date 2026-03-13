@@ -50,7 +50,7 @@ export async function PATCH(
   const {
     title, description, category, platform, contentType, imageUrl,
     businessName, businessAddress, offerDetails, requirements,
-    pointReward, maxReviewers, startDate, endDate, status,
+    pointReward, maxReviewers, startDate, endDate, selectionDate, reviewDeadline, status,
   } = body;
 
   const updated = await prisma.campaign.update({
@@ -70,6 +70,8 @@ export async function PATCH(
       ...(maxReviewers !== undefined && { maxReviewers }),
       ...(startDate !== undefined && { startDate: new Date(startDate) }),
       ...(endDate !== undefined && { endDate: new Date(endDate) }),
+      ...(selectionDate !== undefined && { selectionDate: selectionDate ? new Date(selectionDate) : null }),
+      ...(reviewDeadline !== undefined && { reviewDeadline: reviewDeadline ? new Date(reviewDeadline) : null }),
       ...(status !== undefined && { status }),
     },
   });

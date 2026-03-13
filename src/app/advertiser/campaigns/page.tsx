@@ -59,17 +59,17 @@ export default function AdvertiserCampaignsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">내 캠페인 관리</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">내 캠페인 관리</h1>
         <Link
           href="/advertiser/campaigns/new"
-          className="px-5 py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+          className="px-4 sm:px-5 py-2 sm:py-2.5 bg-red-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-red-600 transition-colors whitespace-nowrap"
         >
           새 캠페인 등록
         </Link>
       </div>
 
       {/* 필터 탭 */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide pb-1">
         {[
           { key: "ALL", label: "전체" },
           { key: "RECRUITING", label: "모집중" },
@@ -79,7 +79,7 @@ export default function AdvertiserCampaignsPage() {
           <button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer ${
               filter === tab.key
                 ? "bg-red-500 text-white"
                 : "bg-white text-gray-600 border hover:bg-gray-50"
