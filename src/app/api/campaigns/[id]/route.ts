@@ -13,7 +13,7 @@ export async function GET(
       where: { id },
       include: {
         advertiser: {
-          select: { id: true, name: true, image: true, businessName: true },
+          select: { id: true, name: true, image: true, businessName: true, role: true },
         },
         _count: { select: { applications: true } },
       },
@@ -107,7 +107,7 @@ export async function PATCH(
       },
       include: {
         advertiser: {
-          select: { id: true, name: true, image: true, businessName: true },
+          select: { id: true, name: true, image: true, businessName: true, role: true },
         },
       },
     });

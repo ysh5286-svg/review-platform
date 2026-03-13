@@ -8,6 +8,7 @@ const campaignInclude = {
       name: true,
       image: true,
       businessName: true,
+      role: true,
     },
   },
   _count: {

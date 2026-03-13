@@ -55,7 +55,7 @@ export async function GET() {
   const campaigns = await prisma.campaign.findMany({
     where,
     include: {
-      advertiser: { select: { businessName: true } },
+      advertiser: { select: { businessName: true, role: true } },
       _count: { select: { applications: true } },
     },
     orderBy: { createdAt: "desc" },

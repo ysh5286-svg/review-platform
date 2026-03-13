@@ -43,7 +43,7 @@ interface CampaignData {
   keyword3: string | null;
   createdAt: string;
   updatedAt: string;
-  advertiser: { id: string; businessName: string | null; name: string | null; image: string | null };
+  advertiser: { id: string; businessName: string | null; name: string | null; image: string | null; role?: string };
   _count: { applications: number };
 }
 
@@ -543,8 +543,8 @@ export default function CampaignDetailClient({
                   {(campaign.advertiser.businessName || campaign.advertiser.name || "?")?.[0]}
                 </div>
               )}
-              <span className="text-sm font-medium text-gray-900">
-                {campaign.advertiser.businessName || campaign.advertiser.name} 사장님
+              <span className={`text-sm font-medium ${campaign.advertiser.role === "ADMIN" ? "text-red-500" : "text-gray-900"}`}>
+                {campaign.advertiser.businessName || campaign.advertiser.name} {campaign.advertiser.role === "ADMIN" ? "관리자" : "사장님"}
               </span>
             </div>
           </div>

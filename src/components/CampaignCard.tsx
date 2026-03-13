@@ -19,7 +19,7 @@ export interface CampaignCardData {
   endDate: string;
   status: string;
   createdAt: string;
-  advertiser: { businessName: string | null };
+  advertiser: { businessName: string | null; role?: string };
   _count: { applications: number };
 }
 
@@ -102,7 +102,7 @@ export default function CampaignCard({ campaign }: { campaign: CampaignCardData 
         </div>
 
         {/* 타이틀 */}
-        <h3 className="text-sm font-bold text-gray-900 line-clamp-1 mb-0.5">
+        <h3 className={`text-sm font-bold line-clamp-1 mb-0.5 ${campaign.advertiser?.role === "ADMIN" ? "text-red-500" : "text-gray-900"}`}>
           {campaign.advertiser?.businessName || campaign.businessName}
         </h3>
         <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-2">

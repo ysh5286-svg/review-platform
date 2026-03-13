@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           advertiser: {
-            select: { id: true, name: true, image: true, businessName: true },
+            select: { id: true, name: true, image: true, businessName: true, role: true },
           },
           _count: { select: { applications: true } },
         },
