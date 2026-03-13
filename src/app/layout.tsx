@@ -52,18 +52,34 @@ export default function RootLayout({
           <main>{children}</main>
         </Providers>
         <Script
-          id="kakao-external-browser"
+          id="external-browser-redirect"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 var ua = navigator.userAgent || '';
+                var url = location.href;
+                var isAndroid = /android/i.test(ua);
+                var isIOS = /iphone|ipad|ipod/i.test(ua);
+
+                // 카카오톡 인앱 브라우저
                 if (ua.match(/KAKAOTALK/i)) {
-                  var url = location.href;
-                  if (/android/i.test(ua)) {
+                  if (isAndroid) {
                     location.href = 'intent://' + url.replace(/https?:\\/\\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
-                  } else if (/iphone|ipad|ipod/i.test(ua)) {
+                  } else if (isIOS) {
                     location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
+                  }
+                }
+                // 인스타그램 인앱 브라우저
+                else if (ua.match(/Instagram/i)) {
+                  if (isAndroid) {
+                    location.href = 'intent://' + url.replace(/https?:\\/\\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+                  } else if (isIOS) {
+                    // iOS 인스타에서는 window.open으로 사파리 열기
+                    window.location.href = url + (url.indexOf('?') !== -1 ? '&' : '?') + '_open_external=true';
+                    setTimeout(function() {
+                      document.querySelector('body').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;padding:20px;text-align:center;"><div><p style="font-size:18px;font-weight:bold;margin-bottom:12px;">사파리에서 열기</p><p style="color:#666;margin-bottom:20px;">더 나은 경험을 위해 사파리에서 열어주세요</p><a href="' + url + '" target="_blank" style="display:inline-block;padding:14px 28px;background:#ef4444;color:white;border-radius:12px;text-decoration:none;font-weight:bold;">사파리로 열기</a></div></div>';
+                    }, 100);
                   }
                 }
               })();
