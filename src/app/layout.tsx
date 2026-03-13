@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import Header from "@/components/Header";
+import InstallBanner from "@/components/InstallBanner";
 import Script from "next/script";
 
 const geistSans = Geist({
@@ -50,6 +51,7 @@ export default function RootLayout({
         <Providers>
           <Header />
           <main>{children}</main>
+          <InstallBanner />
         </Providers>
         <Script
           id="external-browser-redirect"
