@@ -103,7 +103,7 @@ export default function CampaignCard({ campaign }: { campaign: CampaignCardData 
 
         {/* 타이틀 */}
         <h3 className={`text-sm font-bold line-clamp-1 mb-0.5 ${campaign.advertiser?.role === "ADMIN" ? "text-red-500" : "text-gray-900"}`}>
-          {campaign.advertiser?.businessName || campaign.businessName}
+          {campaign.businessName || campaign.advertiser?.businessName}
         </h3>
         <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-2">
           {campaign.offerDetails || campaign.title}

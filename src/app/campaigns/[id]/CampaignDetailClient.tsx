@@ -540,11 +540,11 @@ export default function CampaignDetailClient({
                 <Image src={campaign.advertiser.image} alt="" width={28} height={28} className="rounded-full" />
               ) : (
                 <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-500">
-                  {(campaign.advertiser.businessName || campaign.advertiser.name || "?")?.[0]}
+                  {(campaign.businessName || campaign.advertiser.businessName || campaign.advertiser.name || "?")?.[0]}
                 </div>
               )}
               <span className={`text-sm font-medium ${campaign.advertiser.role === "ADMIN" ? "text-red-500" : "text-gray-900"}`}>
-                {campaign.advertiser.businessName || campaign.advertiser.name} {campaign.advertiser.role === "ADMIN" ? "관리자" : "사장님"}
+                {campaign.businessName || campaign.advertiser.businessName || campaign.advertiser.name} {campaign.advertiser.role === "ADMIN" ? "관리자" : "사장님"}
               </span>
             </div>
           </div>
