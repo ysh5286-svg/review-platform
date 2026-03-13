@@ -23,14 +23,23 @@ const ADVERTISER_MENU = [
   { label: "리뷰 통계", path: "/advertiser/stats", icon: "📊" },
 ];
 
+const ADMIN_MENU = [
+  { label: "대시보드", path: "/admin", icon: "📊" },
+  { label: "회원 관리", path: "/admin/users", icon: "👥" },
+  { label: "캠페인 관리", path: "/admin/campaigns", icon: "📢" },
+  { label: "포인트 관리", path: "/admin/points", icon: "💰" },
+  { label: "신고 관리", path: "/admin/reports", icon: "🚨" },
+  { label: "설정", path: "/admin/settings", icon: "⚙️" },
+];
+
 export default function DashboardSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const role = session?.user?.role;
-  const menu = role === "ADVERTISER" ? ADVERTISER_MENU : REVIEWER_MENU;
-  const roleLabel = role === "ADVERTISER" ? "사장님" : role === "REVIEWER" ? "리뷰어" : "";
+  const menu = role === "ADMIN" ? ADMIN_MENU : role === "ADVERTISER" ? ADVERTISER_MENU : REVIEWER_MENU;
+  const roleLabel = role === "ADVERTISER" ? "사장님" : role === "REVIEWER" ? "리뷰어" : role === "ADMIN" ? "관리자" : "";
 
   // 라우트 변경 시 모바일 사이드바 닫기
   useEffect(() => {
