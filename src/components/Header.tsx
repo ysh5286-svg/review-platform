@@ -9,6 +9,7 @@ import NotificationBell from "./NotificationBell";
 export default function Header() {
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
 
   const roleLabel =
@@ -96,33 +97,67 @@ export default function Header() {
 
                 <NotificationBell />
 
-                {/* Profile → 마이페이지 직행 */}
-                <Link
-                  href={dashboardLink}
-                  className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity duration-200"
-                >
-                  {session.user.image ? (
-                    <Image
-                      src={session.user.image}
-                      alt=""
-                      width={32}
-                      height={32}
-                      className="w-8 h-8 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500 font-semibold">
-                      {session.user.name?.[0] || "U"}
-                    </div>
-                  )}
-                  <span className="text-gray-700 font-medium">
-                    {session.user.name}
-                  </span>
-                  {roleLabel && (
-                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
-                      {roleLabel}
+                {/* Profile 드롭다운 */}
+                <div className="relative">
+                  <button
+                    onClick={() => setProfileOpen(!profileOpen)}
+                    className="flex items-center gap-2 text-sm hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+                  >
+                    {session.user.image ? (
+                      <Image
+                        src={session.user.image}
+                        alt=""
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500 font-semibold">
+                        {session.user.name?.[0] || "U"}
+                      </div>
+                    )}
+                    <span className="text-gray-700 font-medium">
+                      {session.user.name}
                     </span>
+                    {roleLabel && (
+                      <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                        {roleLabel}
+                      </span>
+                    )}
+                    <svg className={`w-4 h-4 text-gray-400 transition-transform ${profileOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {profileOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border z-50 py-2">
+                        <Link
+                          href={dashboardLink}
+                          className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          onClick={() => setProfileOpen(false)}
+                        >
+                          마이페이지
+                        </Link>
+                        <Link
+                          href="/messages"
+                          className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          onClick={() => setProfileOpen(false)}
+                        >
+                          메시지 {unreadMessages > 0 && <span className="text-red-500 font-medium">({unreadMessages})</span>}
+                        </Link>
+                        <div className="border-t my-1" />
+                        <button
+                          onClick={() => { setProfileOpen(false); signOut({ callbackUrl: "/" }); }}
+                          className="block w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                        >
+                          로그아웃
+                        </button>
+                      </div>
+                    </>
                   )}
-                </Link>
+                </div>
               </>
             ) : (
               <Link
